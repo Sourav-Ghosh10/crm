@@ -130,17 +130,20 @@ class DashboardController extends Controller
         $values = [];
         $isAgent = !$user->isAdmin() && !$user->isManager();
 
-        if ($filter === 'date' && $dateStr) {
-            // Selected Date: Show last 7 days ending at the selected date
+        if ($filter === 'date') {
+            // Show full month data for the calendar view
             try {
-                $endDate = \Carbon\Carbon::parse($dateStr);
+                $currentDate = $dateStr ? \Carbon\Carbon::parse($dateStr) : now();
             } catch (\Exception $e) {
-                $endDate = now();
+                $currentDate = now();
             }
+            
+            $startOfMonth = (clone $currentDate)->startOfMonth();
+            $daysInMonth = $currentDate->daysInMonth;
 
-            for ($i = 6; $i >= 0; $i--) {
-                $date = (clone $endDate)->subDays($i);
-                $labels[] = $date->format('D, M d');
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $date = (clone $startOfMonth)->day($i);
+                $labels[] = $date->toDateString();
 
                 $query = CallLog::whereDate('call_start_time', $date->toDateString());
                 if ($isAgent) {
