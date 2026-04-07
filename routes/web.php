@@ -19,6 +19,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+Route::get('/dashboard/call-activity', [DashboardController::class, 'getCallActivityData'])
+    ->middleware(['auth'])
+    ->name('dashboard.call-activity');
+
 // Protected routes - requires authentication
 Route::middleware('auth')->group(function () {
     // Profile routes
@@ -50,10 +54,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}/edit', [\App\Http\Controllers\UserController::class, 'edit'])->name('users.edit');
         Route::patch('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
-        
-        // Reports
-        Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
-        
+
+        // Reports (Controller not implemented yet)
+        // Route::get('/reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
+
         // Call Logs - All logs view and management
         Route::get('/call-logs', [CallLogController::class, 'index'])->name('call-logs.index');
         Route::get('/call-logs/{callLog}', [CallLogController::class, 'show'])->name('call-logs.show');
