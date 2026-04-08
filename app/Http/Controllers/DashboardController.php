@@ -104,7 +104,10 @@ class DashboardController extends Controller
         // Generate initial chart data
         $chartData = $this->calculateChartData($user, 'month');
         $stats['chartMonths'] = $chartData['labels'];
-        $stats['chartValues'] = $chartData['values'];
+        $stats['chartCalls'] = $chartData['calls'];
+        $stats['chartFollowUps'] = $chartData['followUps'];
+        $stats['chartEvents'] = $chartData['events'];
+        $stats['chartValues'] = $chartData['values']; // For backward compatibility if needed
 
         return $stats;
     }
@@ -127,7 +130,9 @@ class DashboardController extends Controller
     private function calculateChartData($user, $filter, $dateStr = null)
     {
         $labels = [];
-        $values = [];
+        $calls = [];
+        $followUps = [];
+        $events = [];
         $isAgent = !$user->isAdmin() && !$user->isManager();
 
         if ($filter === 'date') {
@@ -137,31 +142,57 @@ class DashboardController extends Controller
             } catch (\Exception $e) {
                 $currentDate = now();
             }
-            
+
             $startOfMonth = (clone $currentDate)->startOfMonth();
             $daysInMonth = $currentDate->daysInMonth;
 
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $date = (clone $startOfMonth)->day($i);
-                $labels[] = $date->toDateString();
+                $dateString = $date->toDateString();
+                $labels[] = $dateString;
 
-                $query = CallLog::whereDate('call_start_time', $date->toDateString());
-                if ($isAgent) {
-                    $query->where('staff_member_id', $user->id);
-                }
-                $values[] = $query->count();
+                // Calls count
+                $callsQuery = CallLog::whereDate('call_start_time', $dateString);
+                if ($isAgent)
+                    $callsQuery->where('staff_member_id', $user->id);
+                $calls[] = $callsQuery->count();
+
+                // Follow-ups count
+                $followUpsQuery = CallLog::whereDate('next_follow_up_date', $dateString);
+                if ($isAgent)
+                    $followUpsQuery->where('staff_member_id', $user->id);
+                $followUps[] = $followUpsQuery->count();
+
+                // Events count
+                $eventsQuery = Task::whereDate('due_at', $dateString);
+                if ($isAgent)
+                    $eventsQuery->where('user_id', $user->id);
+                $events[] = $eventsQuery->count();
             }
         } elseif ($filter === 'week') {
             // Last 7 days
             for ($i = 6; $i >= 0; $i--) {
                 $date = now()->subDays($i);
+                $dateString = $date->toDateString();
                 $labels[] = $date->format('D');
 
-                $query = CallLog::whereDate('call_start_time', $date->toDateString());
-                if ($isAgent) {
-                    $query->where('staff_member_id', $user->id);
-                }
-                $values[] = $query->count();
+                // Calls
+                $callsQuery = CallLog::whereDate('call_start_time', $dateString);
+                if ($isAgent)
+                    $callsQuery->where('staff_member_id', $user->id);
+                $calls[] = $callsQuery->count();
+
+                // Follow-ups
+                $followUpsQuery = CallLog::whereDate('next_follow_up_date', $dateString);
+                if ($isAgent)
+                    $followUpsQuery->where('staff_member_id', $user->id);
+                $followUps[] = $followUpsQuery->count();
+
+                // Events
+                $eventsQuery = Task::whereDate('due_at', $dateString);
+                if ($isAgent)
+                    $eventsQuery->where('user_id', $user->id);
+                $events[] = $eventsQuery->count();
             }
         } elseif ($filter === 'year') {
             // Last 12 months
@@ -169,12 +200,26 @@ class DashboardController extends Controller
                 $date = now()->subMonths($i);
                 $labels[] = $date->format('M');
 
-                $query = CallLog::whereMonth('call_start_time', $date->month)
+                // Calls
+                $callsQuery = CallLog::whereMonth('call_start_time', $date->month)
                     ->whereYear('call_start_time', $date->year);
-                if ($isAgent) {
-                    $query->where('staff_member_id', $user->id);
-                }
-                $values[] = $query->count();
+                if ($isAgent)
+                    $callsQuery->where('staff_member_id', $user->id);
+                $calls[] = $callsQuery->count();
+
+                // Follow-ups
+                $followUpsQuery = CallLog::whereMonth('next_follow_up_date', $date->month)
+                    ->whereYear('next_follow_up_date', $date->year);
+                if ($isAgent)
+                    $followUpsQuery->where('staff_member_id', $user->id);
+                $followUps[] = $followUpsQuery->count();
+
+                // Events
+                $eventsQuery = Task::whereMonth('due_at', $date->month)
+                    ->whereYear('due_at', $date->year);
+                if ($isAgent)
+                    $eventsQuery->where('user_id', $user->id);
+                $events[] = $eventsQuery->count();
             }
         } else {
             // Default: last 6 months
@@ -182,18 +227,36 @@ class DashboardController extends Controller
                 $date = now()->subMonths($i);
                 $labels[] = $date->format('M');
 
-                $query = CallLog::whereMonth('call_start_time', $date->month)
+                // Calls
+                $callsQuery = CallLog::whereMonth('call_start_time', $date->month)
                     ->whereYear('call_start_time', $date->year);
-                if ($isAgent) {
-                    $query->where('staff_member_id', $user->id);
-                }
-                $values[] = $query->count();
+                if ($isAgent)
+                    $callsQuery->where('staff_member_id', $user->id);
+                $calls[] = $callsQuery->count();
+
+                // Follow-ups
+                $followUpsQuery = CallLog::whereMonth('next_follow_up_date', $date->month)
+                    ->whereYear('next_follow_up_date', $date->year);
+                if ($isAgent)
+                    $followUpsQuery->where('staff_member_id', $user->id);
+                $followUps[] = $followUpsQuery->count();
+
+                // Events
+                $eventsQuery = Task::whereMonth('due_at', $date->month)
+                    ->whereYear('due_at', $date->year);
+                if ($isAgent)
+                    $eventsQuery->where('user_id', $user->id);
+                $events[] = $eventsQuery->count();
             }
         }
 
         return [
             'labels' => $labels,
-            'values' => $values,
+            'calls' => $calls,
+            'followUps' => $followUps,
+            'events' => $events,
+            // Keep 'values' for backward compatibility or the bars view (using calls as primary)
+            'values' => $calls,
         ];
     }
 }

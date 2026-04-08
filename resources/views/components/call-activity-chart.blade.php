@@ -1,9 +1,12 @@
-@props(['labels' => [], 'values' => []])
+@props(['labels' => [], 'values' => [], 'calls' => [], 'followUps' => [], 'events' => []])
 
 <div x-data="{
     filter: 'month',
     labels: {{ json_encode($labels) }},
     values: {{ json_encode($values) }},
+    calls: {{ json_encode($calls) }},
+    followUps: {{ json_encode($followUps) }},
+    events: {{ json_encode($events) }},
     loading: false,
     
     // Calendar State
@@ -90,6 +93,9 @@
             const data = await res.json();
             this.labels = data.labels;
             this.values = data.values;
+            this.calls = data.calls || [];
+            this.followUps = data.followUps || [];
+            this.events = data.events || [];
             
             if (f === 'date' && targetDate) {
                 // If we fetched for a specific date, update the current month/year view
@@ -118,10 +124,16 @@
         this.setFilter('date');
     },
 
-    getValueForDay(full) {
-        if (!full) return 0;
+    getDataForDay(full) {
+        if (!full) return { calls: 0, followUps: 0, events: 0 };
         let index = this.labels.indexOf(full);
-        return index !== -1 ? this.values[index] : 0;
+        if (index === -1) return { calls: 0, followUps: 0, events: 0 };
+        
+        return {
+            calls: this.calls[index] || 0,
+            followUps: this.followUps[index] || 0,
+            events: this.events[index] || 0
+        };
     },
 }" class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
     <div class="flex items-center justify-between mb-6">
@@ -141,13 +153,22 @@
             </template>
 
             <!-- Month navigation for Calendar View -->
-            <div x-show="filter === 'date'" class="flex items-center gap-2 ml-4 animate-in fade-in slide-in-from-right-4">
-                <button @click="changeMonth(-1)" class="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <div x-show="filter === 'date'"
+                class="flex items-center gap-2 ml-4 animate-in fade-in slide-in-from-right-4">
+                <button @click="changeMonth(-1)"
+                    class="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
                 </button>
-                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 w-24 text-center" x-text="`${calendarMonthName} ${currentYear}`"></span>
-                <button @click="changeMonth(1)" class="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 w-24 text-center"
+                    x-text="`${calendarMonthName} ${currentYear}`"></span>
+                <button @click="changeMonth(1)"
+                    class="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
                 </button>
             </div>
 
@@ -171,37 +192,74 @@
 
         <!-- Calendar Grid (Only visible when filter === 'date') -->
         <div x-show="filter === 'date'" class="h-full animate-in fade-in duration-500 overflow-hidden">
-            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;" class="bg-gray-100 dark:bg-slate-700/50 rounded-lg overflow-hidden border border-gray-100 dark:border-slate-700/50">
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;"
+                class="bg-gray-100 dark:bg-slate-700/50 rounded-lg overflow-hidden border border-gray-100 dark:border-slate-700/50">
                 <!-- Headers -->
                 <template x-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']">
-                    <div class="bg-gray-50 dark:bg-slate-800/80 py-2 text-center border-b border-gray-100 dark:border-slate-700/50">
-                        <span class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest" x-text="day"></span>
+                    <div
+                        class="bg-gray-50 dark:bg-slate-800/80 py-2 text-center border-b border-gray-100 dark:border-slate-700/50">
+                        <span class="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest"
+                            x-text="day"></span>
                     </div>
                 </template>
-                
+
                 <!-- Day Cells -->
                 <template x-for="(item, idx) in calendarDays" :key="idx">
-                    <div class="min-h-[64px] bg-white dark:bg-slate-800 transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30 p-2 relative">
-                        <div class="flex items-center justify-between mb-1" x-show="item.day">
+                    <div
+                        class="h-[80px] bg-white dark:bg-slate-800 transition-colors hover:bg-gray-50 dark:hover:bg-slate-700/30 p-1.5 relative overflow-hidden border-b border-r border-gray-100 dark:border-slate-700/50">
+                        <div class="flex items-center justify-between mb-0.5" x-show="item.day">
                             <span :class="item.full === new Date().toISOString().split('T')[0] 
-                                    ? 'bg-indigo-600 text-white font-bold w-5 h-5 rounded-full flex items-center justify-center text-[10px]' 
-                                    : 'text-gray-400 dark:text-slate-500 text-[10px] font-medium'" 
-                                  x-text="item.day"></span>
+                                    ? 'bg-indigo-600 text-white font-bold w-4 h-4 rounded-full flex items-center justify-center text-[10px]' 
+                                    : 'text-gray-400 dark:text-slate-500 text-[10px] font-medium'"
+                                x-text="item.day"></span>
                         </div>
-                        
+
                         <!-- Activity Indicators -->
-                        <div x-show="item.day && getValueForDay(item.full) > 0" class="mt-auto">
-                            <div class="bg-indigo-500/10 border-l-2 border-indigo-500 rounded px-1.5 py-1 group relative cursor-pointer">
-                                <div class="flex items-center gap-1">
-                                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-                                    <p class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 leading-tight">
-                                        <span x-text="getValueForDay(item.full)"></span> Calls
-                                    </p>
+                        <div x-show="item.day" class="space-y-1 mt-0.5 flex flex-col items-start">
+                            <!-- Calls -->
+                            <template x-if="getDataForDay(item.full).calls > 0">
+                                <div
+                                    class="w-full max-w-full bg-indigo-500/5 border-l-2 border-indigo-500 rounded-sm px-1 py-0 relative group overflow-hidden">
+                                    <div class="flex items-center gap-1 truncate">
+                                        <div class="w-1 h-1 rounded-full bg-indigo-500 animate-pulse flex-shrink-0">
+                                        </div>
+                                        <p
+                                            class="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap truncate leading-none">
+                                            <span x-text="getDataForDay(item.full).calls"></span> Calls
+                                        </p>
+                                    </div>
                                 </div>
-                                <div class="absolute bottom-full left-0 mb-2 invisible group-hover:visible bg-gray-900 text-white text-[9px] px-2 py-1 rounded shadow-xl whitespace-nowrap z-50">
-                                    Activity logged for this day
+                            </template>
+
+                            <!-- Follow-ups -->
+                            <template x-if="getDataForDay(item.full).followUps > 0">
+                                <div
+                                    class="w-full max-w-full bg-emerald-500/5 border-l-2 border-emerald-500 rounded-sm px-1 py-0 relative group overflow-hidden">
+                                    <div class="flex items-center gap-1 truncate">
+                                        <div class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse flex-shrink-0">
+                                        </div>
+                                        <p
+                                            class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap truncate leading-none">
+                                            <span x-text="getDataForDay(item.full).followUps"></span> Follow-ups
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            </template>
+
+                            <!-- Events -->
+                            <template x-if="getDataForDay(item.full).events > 0">
+                                <div
+                                    class="w-full max-w-full bg-amber-500/5 border-l-2 border-amber-500 rounded-sm px-1 py-0 relative group overflow-hidden">
+                                    <div class="flex items-center gap-1 truncate">
+                                        <div class="w-1 h-1 rounded-full bg-amber-500 animate-pulse flex-shrink-0">
+                                        </div>
+                                        <p
+                                            class="text-[11px] font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap truncate leading-none">
+                                            <span x-text="getDataForDay(item.full).events"></span> Events
+                                        </p>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </template>
@@ -221,8 +279,21 @@
 
                         <!-- Tooltip on hover -->
                         <div
-                            class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 dark:bg-slate-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                            <span x-text="value.toLocaleString()"></span> Calls
+                            class="absolute -top-16 left-1/2 -translate-x-1/2 px-3 py-2 bg-gray-900 dark:bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-20 shadow-xl border border-white/10 scale-95 group-hover:scale-100">
+                            <div class="space-y-1">
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-gray-400 font-medium">Calls:</span>
+                                    <span class="font-bold text-indigo-400" x-text="calls[index] || 0"></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-gray-400 font-medium">Follow-ups:</span>
+                                    <span class="font-bold text-emerald-400" x-text="followUps[index] || 0"></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-gray-400 font-medium">Events:</span>
+                                    <span class="font-bold text-amber-400" x-text="events[index] || 0"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <span class="text-xs text-gray-500 dark:text-gray-400 mt-2" x-text="labels[index]"></span>

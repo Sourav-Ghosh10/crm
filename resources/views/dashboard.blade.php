@@ -133,7 +133,8 @@
         <!-- Left Column - Charts & Tables -->
         <div class="lg:col-span-2 space-y-8">
             <!-- Call Activity Chart -->
-            <x-call-activity-chart :labels="$stats['chartMonths']" :values="$stats['chartValues']" />
+            <x-call-activity-chart :labels="$stats['chartMonths']" :calls="$stats['chartCalls']"
+                :followUps="$stats['chartFollowUps']" :events="$stats['chartEvents']" :values="$stats['chartValues']" />
 
             <!-- Recent Clients Table -->
             <div
