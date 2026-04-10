@@ -53,7 +53,9 @@
             <h3 class="text-3xl font-bold text-gray-900 dark:text-white">
                 {{ number_format($stats['totalClients'] ?? 0) }}
             </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Total Clients</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Total Clients
+            </p>
             <div class="mt-4 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-indigo-600 rounded-full" style="width: 75%"></div>
             </div>
