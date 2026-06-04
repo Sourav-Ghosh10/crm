@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\HasPermissions;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,10 +11,10 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasPermissions;
 
     /**
-     * Role constants
+     * Role constants (legacy support)
      */
     public const ROLE_ADMIN = 'Admin';
     public const ROLE_MANAGER = 'Manager';
@@ -22,7 +23,7 @@ class User extends Authenticatable
     public const ROLE_BEADER = 'Beader';
 
     /**
-     * Available roles
+     * Available roles (legacy support)
      */
     public static function getRoles(): array
     {
@@ -48,11 +49,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is Admin
+     * Check if user is Admin / Super Admin
      */
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return $this->hasRole('super-admin') || $this->role === self::ROLE_ADMIN;
     }
 
     /**
@@ -60,12 +61,18 @@ class User extends Authenticatable
      */
     public function isManager(): bool
     {
-        return $this->role === self::ROLE_MANAGER;
+        return $this->hasRole('manager') || $this->role === self::ROLE_MANAGER;
     }
 
+    /**
+     * Check if user is Agent
+     */
     public function isAgent(): bool
     {
-        return $this->role === self::ROLE_AGENT || $this->role === self::ROLE_BEADER;
+        if ($this->isAdmin() || $this->isManager() || $this->isTeamLead()) {
+            return false;
+        }
+        return $this->hasRole('agent') || $this->role === self::ROLE_AGENT || $this->role === self::ROLE_BEADER;
     }
 
     /**
@@ -73,7 +80,7 @@ class User extends Authenticatable
      */
     public function isTeamLead(): bool
     {
-        return $this->role === self::ROLE_TEAM_LEAD;
+        return $this->hasRole('team-lead') || $this->role === self::ROLE_TEAM_LEAD;
     }
 
     /**
@@ -89,7 +96,15 @@ class User extends Authenticatable
      */
     public function hasRole(string $role): bool
     {
-        return $this->role === $role;
+        $normalized = match($role) {
+            'Admin', 'Administrator' => 'super-admin',
+            'Manager' => 'manager',
+            'Team Lead' => 'team-lead',
+            'Agent' => 'agent',
+            'Beader' => 'agent',
+            default => $role
+        };
+        return $this->roles->contains('name', $normalized) || ($this->role === $role);
     }
 
     /**
@@ -97,33 +112,36 @@ class User extends Authenticatable
      */
     public function hasAnyRole(array $roles): bool
     {
-        return in_array($this->role, $roles);
+        foreach ($roles as $r) {
+            if ($this->hasRole($r)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Check if user has at least Admin or Manager role
+     * Check if user has at least Admin, Manager, Team Lead or Supervisor role
      */
     public function isManagement(): bool
     {
-        return $this->isAdmin() || $this->isManager() || $this->isTeamLead();
+        return $this->isAdmin() || $this->isManager() || $this->isTeamLead() || $this->hasRole('supervisor');
     }
 
     /**
      * Check if user can access the Projects section.
-     * Only Administrator and Manager roles are allowed.
      */
     public function canAccessProjects(): bool
     {
-        return $this->isAdmin() || $this->isManager();
+        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager();
     }
 
     /**
      * Check if user can access the Users section.
-     * Only Administrator and Manager roles are allowed.
      */
     public function canManageUsers(): bool
     {
-        return $this->isAdmin() || $this->isManager();
+        return $this->hasPermissionTo('users.view') || $this->isAdmin() || $this->isManager();
     }
 
     /**
@@ -131,6 +149,10 @@ class User extends Authenticatable
      */
     public function getRoleLabelAttribute(): string
     {
+        $dbRole = $this->roles()->orderBy('hierarchy_level', 'asc')->first();
+        if ($dbRole) {
+            return $dbRole->display_name;
+        }
         return self::getRoles()[$this->role] ?? $this->role;
     }
 

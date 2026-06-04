@@ -94,11 +94,11 @@ class DashboardController extends Controller
         if ($isAgent) {
             $stats['callsToday'] = CallLog::where('staff_member_id', $user->id)
                 ->whereDate('call_start_time', today())->count();
-            $stats['pendingTasks'] = CallLog::where('staff_member_id', $user->id)
-                ->whereDate('next_follow_up_date', '>=', today())->count();
+            $stats['pendingTasks'] = Task::where('user_id', $user->id)
+                ->where('is_completed', false)->count();
         } else {
             $stats['callsToday'] = CallLog::whereDate('call_start_time', today())->count();
-            $stats['pendingTasks'] = CallLog::whereDate('next_follow_up_date', '>=', today())->count();
+            $stats['pendingTasks'] = Task::where('is_completed', false)->count();
         }
 
         // Generate initial chart data

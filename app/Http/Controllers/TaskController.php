@@ -10,17 +10,39 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $user = auth()->user();
         $isManagement = $user->isManagement();
 
-        $tasks = Task::with(['client', 'user'])
-            ->when(!$isManagement, function($query) use ($user) {
-                return $query->where('user_id', $user->id);
-            })
-            ->orderBy('due_at', 'desc')
-            ->paginate(20);
+        $query = Task::with(['client', 'user'])
+            ->when(!$isManagement, function($q) use ($user) {
+                return $q->where('user_id', $user->id);
+            });
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('due_at', $request->date);
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'completed') {
+                $query->where('is_completed', true);
+            } elseif ($request->status === 'pending') {
+                $query->where('is_completed', false);
+            } else {
+                $query->where('priority', $request->status);
+            }
+        }
+
+        $tasks = $query->orderBy('due_at', 'desc')->paginate(20)->withQueryString();
 
         return view('tasks.index', compact('tasks'));
     }

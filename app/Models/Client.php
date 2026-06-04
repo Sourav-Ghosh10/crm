@@ -3,9 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\Auditable;
 
 class Client extends Model
 {
+    use SoftDeletes, Auditable;
+    
+    protected $appends = ['status_color'];
+
     protected $fillable = [
         'customer_number',
         'full_name',

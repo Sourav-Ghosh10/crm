@@ -12,6 +12,48 @@
         </a>
     </div>
 
+    <!-- Filters Section -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-slate-700 mb-6">
+        <form method="GET" action="{{ route('tasks.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Search -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+                <input type="text" name="search" value="{{ request('search') }}" onchange="this.form.submit()" placeholder="Search tasks..." class="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- Date -->
+            <div>
+                <input type="date" name="date" value="{{ request('date') }}" onchange="this.form.submit()" class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- Category -->
+            <div>
+                <select name="category" onchange="this.form.submit()" class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Categories</option>
+                    <option value="Task" {{ request('category') == 'Task' ? 'selected' : '' }}>Task</option>
+                    <option value="Meeting" {{ request('category') == 'Meeting' ? 'selected' : '' }}>Meeting</option>
+                    <option value="Call" {{ request('category') == 'Call' ? 'selected' : '' }}>Call</option>
+                </select>
+            </div>
+
+            <!-- Status/Priority -->
+            <div>
+                <select name="status" onchange="this.form.submit()" class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Statuses & Priorities</option>
+                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="High" {{ request('status') == 'High' ? 'selected' : '' }}>High Priority</option>
+                    <option value="Medium" {{ request('status') == 'Medium' ? 'selected' : '' }}>Medium Priority</option>
+                    <option value="Low" {{ request('status') == 'Low' ? 'selected' : '' }}>Low Priority</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
     <!-- Tasks List -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
         <div class="overflow-x-auto">
@@ -95,12 +137,18 @@
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="is_completed" value="1">
-                                        <button type="submit" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Mark as Completed">
+                                        <button type="submit" class="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors" title="Mark as Completed">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
                                         </button>
                                     </form>
+                                    @else
+                                    <button type="button" disabled class="p-2 text-emerald-600/50 dark:text-emerald-500/50 cursor-not-allowed rounded-lg" title="Task Completed">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                        </svg>
+                                    </button>
                                     @endif
                                     <a href="{{ route('tasks.edit', $task) }}" class="p-2 text-gray-400 hover:text-indigo-600 rounded-lg transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

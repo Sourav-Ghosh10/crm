@@ -32,6 +32,10 @@ Route::middleware('auth')->group(function () {
 
     // AJAX Search for clients - must be defined BEFORE resource route
     Route::get('/clients/search', [\App\Http\Controllers\ClientController::class, 'search'])->name('clients.search');
+    
+    // Restore soft-deleted clients
+    Route::post('/clients/{id}/restore', [\App\Http\Controllers\ClientController::class, 'restore'])->name('clients.restore');
+    Route::delete('/clients/{id}/force-delete', [\App\Http\Controllers\ClientController::class, 'forceDelete'])->name('clients.force-delete');
 
     // Client Management - available to ALL roles (Admin, Manager, Agent)
     Route::resource('clients', \App\Http\Controllers\ClientController::class);

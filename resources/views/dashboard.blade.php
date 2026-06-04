@@ -36,8 +36,8 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Total Clients Card -->
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+        <a href="{{ route('clients.index') }}"
+            class="block bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor"
@@ -59,11 +59,11 @@
             <div class="mt-4 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-indigo-600 rounded-full" style="width: 75%"></div>
             </div>
-        </div>
+        </a>
 
         <!-- Active Leads Card -->
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+        <a href="{{ route('clients.index', ['filter' => 'active']) }}"
+            class="block bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor"
@@ -81,11 +81,11 @@
             <div class="mt-4 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-amber-500 rounded-full" style="width: 60%"></div>
             </div>
-        </div>
+        </a>
 
         <!-- Calls Today Card -->
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+        <a href="{{ route('call-logs.index', ['start_date' => now()->format('Y-m-d'), 'end_date' => now()->format('Y-m-d'), 'call_result' => '', 'staff_member_id' => '']) }}"
+            class="block bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div
                     class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
@@ -107,11 +107,11 @@
             <div class="mt-4 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-emerald-500 rounded-full" style="width: 45%"></div>
             </div>
-        </div>
+        </a>
 
         <!-- Pending Tasks Card -->
-        <div
-            class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md transition-shadow">
+        <a href="{{ route('tasks.index', ['search' => '', 'date' => now()->format('Y-m-d'), 'category' => '', 'status' => '']) }}"
+            class="block bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
             <div class="flex items-center justify-between mb-4">
                 <div class="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor"
@@ -129,7 +129,7 @@
             <div class="mt-4 h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div class="h-full bg-rose-500 rounded-full" style="width: 35%"></div>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Main Content Grid -->

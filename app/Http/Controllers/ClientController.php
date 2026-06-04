@@ -18,8 +18,15 @@ class ClientController extends Controller
         $isManagement = $user->isManagement();
         $search = $request->input('search', '');
         $status = $request->input('status', '');
+        $filter = $request->input('filter', '');
         
         $clients = Client::with(['agent', 'creator'])
+            ->when($filter === 'deleted' && $isManagement, function ($query) {
+                return $query->onlyTrashed();
+            })
+            ->when($filter === 'active', function ($query) {
+                return $query->whereIn('status', ['New', 'Follow-up', 'In Progress']);
+            })
             ->when(!$isManagement, function ($query) use ($user) {
                 return $query->where('agent_id', $user->id);
             })
@@ -40,7 +47,7 @@ class ClientController extends Controller
 
         $statuses = Client::getStatuses();
         
-        return view('clients.index', compact('clients', 'search', 'status', 'statuses'));
+        return view('clients.index', compact('clients', 'search', 'status', 'statuses', 'filter'));
     }
 
     /**
@@ -236,8 +243,15 @@ class ClientController extends Controller
         $isManagement = $user->isManagement();
         $search = $request->get('search', '');
         $status = $request->get('status', '');
+        $filter = $request->get('filter', '');
         
         $clients = Client::with(['agent', 'creator'])
+            ->when($filter === 'deleted' && $isManagement, function ($query) {
+                return $query->onlyTrashed();
+            })
+            ->when($filter === 'active', function ($query) {
+                return $query->whereIn('status', ['New', 'Follow-up', 'In Progress']);
+            })
             ->when(!$isManagement, function ($query) use ($user) {
                 return $query->where('agent_id', $user->id);
             })
@@ -262,5 +276,37 @@ class ClientController extends Controller
             'clients' => $clients,
             'count' => $clients->count()
         ]);
+    }
+
+    /**
+     * Restore the specified soft-deleted client.
+     */
+    public function restore(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user->isManagement()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $client = Client::onlyTrashed()->findOrFail($id);
+        $client->restore();
+
+        return redirect()->route('clients.index')->with('success', 'Client restored successfully.');
+    }
+
+    /**
+     * Permanently delete the specified soft-deleted client.
+     */
+    public function forceDelete(Request $request, $id)
+    {
+        $user = Auth::user();
+        if (!$user->isManagement()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $client = Client::onlyTrashed()->findOrFail($id);
+        $client->forceDelete();
+
+        return redirect()->route('clients.index')->with('success', 'Client permanently deleted successfully.');
     }
 }
