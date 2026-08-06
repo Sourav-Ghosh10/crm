@@ -46,6 +46,21 @@ class Project extends Model
         return $this->hasMany(ProjectAmount::class, 'project_id');
     }
 
+    public function crmDetails()
+    {
+        return $this->hasOne(CrmProject::class, 'project_id');
+    }
+
+    public function assignees()
+    {
+        return $this->belongsToMany(User::class, 'project_assignments', 'project_id', 'user_id')->withTimestamps();
+    }
+
+    public function dailyUpdates()
+    {
+        return $this->hasMany(ProjectDailyUpdate::class, 'project_id');
+    }
+
     protected static function booted()
     {
         static::creating(function ($project) {

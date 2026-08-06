@@ -3,14 +3,18 @@
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Welcome back, {{ Auth::user()->name }}!
                 @if(Auth::user()->isAdmin())
                     <span class="text-indigo-600 dark:text-indigo-400">(Administrator)</span>
                 @elseif(Auth::user()->isManager())
                     <span class="text-purple-600 dark:text-purple-400">(Manager)</span>
+                @elseif(Auth::user()->hasRole('project-manager'))
+                    <span class="text-blue-600 dark:text-blue-400">(Project Manager)</span>
+                @elseif(Auth::user()->isTeamLead())
+                    <span class="text-amber-600 dark:text-amber-400">(Team Lead)</span>
                 @else
-                    <span class="text-emerald-600 dark:text-emerald-400">(Agent)</span>
+                    <span class="text-emerald-600 dark:text-emerald-400">({{ Auth::user()->role_label }})</span>
                 @endif
             </p>
         </div>

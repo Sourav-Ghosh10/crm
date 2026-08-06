@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -29,7 +30,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = User::getRoles();
+        $roles = Role::all();
         return view('users.create', compact('roles'));
     }
 
@@ -42,15 +43,21 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in(array_keys(User::getRoles()))],
+            'role' => ['required', Rule::exists('roles', 'name')],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
+        
+        // Also attach the role relation
+        $dbRole = Role::where('name', $request->role)->first();
+        if ($dbRole) {
+            $user->roles()->attach($dbRole->id);
+        }
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -68,7 +75,7 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $roles = User::getRoles();
+        $roles = Role::all();
         return view('users.edit', compact('user', 'roles'));
     }
 
@@ -80,7 +87,7 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', Rule::in(array_keys(User::getRoles()))],
+            'role' => ['required', Rule::exists('roles', 'name')],
         ]);
 
         $user->update([
@@ -88,6 +95,12 @@ class UserController extends Controller
             'email' => $request->email,
             'role' => $request->role,
         ]);
+        
+        // Sync the role relation
+        $dbRole = Role::where('name', $request->role)->first();
+        if ($dbRole) {
+            $user->roles()->sync([$dbRole->id]);
+        }
 
         if ($request->filled('password')) {
             $request->validate([

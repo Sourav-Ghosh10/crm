@@ -23,6 +23,10 @@ Route::get('/dashboard/call-activity', [DashboardController::class, 'getCallActi
     ->middleware(['auth'])
     ->name('dashboard.call-activity');
 
+Route::get('/dashboard/project-progress', [DashboardController::class, 'getProjectProgressData'])
+    ->middleware(['auth'])
+    ->name('dashboard.project-progress');
+
 // Protected routes - requires authentication
 Route::middleware('auth')->group(function () {
     // Profile routes
@@ -43,8 +47,23 @@ Route::middleware('auth')->group(function () {
     // Task Management
     Route::resource('tasks', \App\Http\Controllers\TaskController::class);
 
-    // Project Management - Admin and Manager only
-    Route::middleware('role:Admin|Manager')->group(function () {
+    // Simple Project Management
+    Route::get('/crm-projects', [\App\Http\Controllers\CrmProjectController::class, 'index'])->name('crm-projects.index');
+    Route::get('/crm-projects/{project}/show', [\App\Http\Controllers\CrmProjectController::class, 'show'])->name('crm-projects.show');
+    Route::get('/crm-projects/{project}/docs', [\App\Http\Controllers\CrmProjectController::class, 'docsIndex'])->name('crm-projects.docs');
+    Route::get('/crm-projects/{project}/docs/create', [\App\Http\Controllers\CrmProjectController::class, 'docsCreate'])->name('crm-projects.docs.create');
+    Route::post('/crm-projects/{project}/docs', [\App\Http\Controllers\CrmProjectController::class, 'docsStore'])->name('crm-projects.docs.store');
+    Route::get('/crm-projects/{project}/docs/{document}', [\App\Http\Controllers\CrmProjectController::class, 'docsShow'])->name('crm-projects.docs.show');
+    Route::get('/crm-projects/{project}/edit', [\App\Http\Controllers\CrmProjectController::class, 'edit'])->name('crm-projects.edit');
+    Route::post('/crm-projects/{project}/details', [\App\Http\Controllers\CrmProjectController::class, 'storeOrUpdate'])->name('crm-projects.details.store');
+    Route::get('/crm-projects/{project}/daily-updates', [\App\Http\Controllers\CrmProjectController::class, 'dailyUpdatesIndex'])->name('crm-projects.daily-updates');
+    Route::post('/crm-projects/{project}/daily-updates', [\App\Http\Controllers\CrmProjectController::class, 'storeDailyUpdate'])->name('crm-projects.daily-updates.store');
+    Route::patch('/crm-projects/{project}/daily-updates/{update}', [\App\Http\Controllers\CrmProjectController::class, 'updateDailyUpdate'])->name('crm-projects.daily-updates.update');
+    Route::get('/api/attachments/{attachment}', [\App\Http\Controllers\CrmProjectController::class, 'attachmentShow'])->name('api.attachments.show');
+    Route::get('/api/daily-updates/{update}/attachment', [\App\Http\Controllers\CrmProjectController::class, 'legacyDailyUpdateAttachmentShow'])->name('api.daily-updates.attachment.show');
+
+    // Project Management - Admin, Manager, and Project Manager
+    Route::middleware('role:Admin|Manager|project-manager')->group(function () {
         Route::get('/projects/settings', [\App\Http\Controllers\ProjectController::class, 'settings'])->name('projects.settings');
         Route::post('/projects/settings', [\App\Http\Controllers\ProjectController::class, 'saveSettings'])->name('projects.settings.save');
         Route::get('/projects/invoices', [\App\Http\Controllers\ProjectController::class, 'invoices'])->name('projects.invoices');
@@ -61,8 +80,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/clients/{client}/call-logs/create', [CallLogController::class, 'create'])->name('clients.call-logs.create');
     Route::post('/clients/{client}/call-logs', [CallLogController::class, 'store'])->name('clients.call-logs.store');
 
-    // User Management - Admin and Manager only
-    Route::middleware('role:Admin|Manager')->group(function () {
+    // User Management - Admin, Manager, and Project Manager
+    Route::middleware('role:Admin|Manager|project-manager')->group(function () {
         Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [\App\Http\Controllers\UserController::class, 'create'])->name('users.create');
         Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store');

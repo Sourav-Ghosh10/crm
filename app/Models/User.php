@@ -69,7 +69,7 @@ class User extends Authenticatable
      */
     public function isAgent(): bool
     {
-        if ($this->isAdmin() || $this->isManager() || $this->isTeamLead()) {
+        if ($this->isAdmin() || $this->isManager() || $this->isTeamLead() || $this->hasRole('project-manager')) {
             return false;
         }
         return $this->hasRole('agent') || $this->role === self::ROLE_AGENT || $this->role === self::ROLE_BEADER;
@@ -133,7 +133,7 @@ class User extends Authenticatable
      */
     public function canAccessProjects(): bool
     {
-        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager();
+        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager() || $this->hasRole('project-manager');
     }
 
     /**
@@ -141,7 +141,7 @@ class User extends Authenticatable
      */
     public function canManageUsers(): bool
     {
-        return $this->hasPermissionTo('users.view') || $this->isAdmin() || $this->isManager();
+        return $this->hasPermissionTo('users.view') || $this->isAdmin() || $this->isManager() || $this->hasRole('project-manager');
     }
 
     /**
