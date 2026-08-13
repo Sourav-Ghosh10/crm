@@ -405,6 +405,10 @@ class ProjectController extends Controller
      */
     public function show($id)
     {
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $project = Project::withSum('projectAmounts as calculated_base_amount', 'project_amount')
             ->withSum('projectAmounts as calculated_total_amount', 'total_amount')
             ->withSum('payments as calculated_paid_amount', 'amount')

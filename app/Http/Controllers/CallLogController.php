@@ -14,6 +14,9 @@ class CallLogController extends Controller
      */
     public function index(Request $request)
     {
+        $user = Auth::user();
+        $isManagement = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+        
         $query = CallLog::with(['client', 'staffMember', 'creator']);
 
         // Filter by date range
@@ -29,9 +32,14 @@ class CallLogController extends Controller
             $query->where('call_result', $request->call_result);
         }
 
-        // Filter by staff member
-        if ($request->has('staff_member_id') && $request->staff_member_id) {
-            $query->where('staff_member_id', $request->staff_member_id);
+        // Enforce restriction to own logs for non-management
+        if (!$isManagement) {
+            $query->where('staff_member_id', $user->id);
+        } else {
+            // Only allow filtering by staff member if user is management
+            if ($request->has('staff_member_id') && $request->staff_member_id) {
+                $query->where('staff_member_id', $request->staff_member_id);
+            }
         }
 
         // Filter by client

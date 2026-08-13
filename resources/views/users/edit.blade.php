@@ -1,4 +1,4 @@
-<x-app-layout>
+  <x-app-layout>
     <div class="flex items-center gap-4 mb-8">
         <a href="{{ route('users.index') }}" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,8 +42,8 @@
                     <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role</label>
                     <select name="role" id="role" required
                         class="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500">
-                        @foreach($roles as $value => $label)
-                            <option value="{{ $value }}" {{ old('role', $user->role) == $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->name }}" {{ old('role', $user->role) == $role->name ? 'selected' : '' }}>{{ $role->display_name }}</option>
                         @endforeach
                     </select>
                     @error('role')

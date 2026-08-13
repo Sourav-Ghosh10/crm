@@ -13,11 +13,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+
+    <!-- Pusher + Auth globals injected from PHP (correct for any sub-path) -->
+    <script>
+        window.__PUSHER_KEY__      = "{{ config('broadcasting.connections.pusher.key') }}";
+        window.__PUSHER_CLUSTER__  = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+        window.__PUSHER_AUTH_URL__ = "{{ url('/broadcasting/auth') }}";
+        window.__CSRF_TOKEN__      = "{{ csrf_token() }}";
+    </script>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
 
     <script>
         // Initialize dark mode on page load
@@ -59,75 +67,133 @@
                     <span class="font-medium">Dashboard</span>
                 </x-nav-link>
 
-                <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
-                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    <span class="font-medium">Clients</span>
-                </x-nav-link>
-
-                @auth
-                    @if(Auth::user()->canAccessProjects())
-                    <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
-                        <button @click="open = !open" 
-                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                            <div class="flex items-center gap-3">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
-                                </svg>
-                                <span class="font-medium">Projects</span>
-                            </div>
-                            <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-
-                        <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" class="mt-1 ml-4 space-y-1">
-                            <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
-                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
-                                <span>• List Projects</span>
-                            </x-nav-link>
-                            <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
-                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
-                                <span>• Settings</span>
-                            </x-nav-link>
-                            <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
-                                class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
-                                <span>• Invoices</span>
-                            </x-nav-link>
-                        </div>
-                    </div>
+                @if(Auth::user()->isAgent())
+                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="font-medium">Clients</span>
+                    </x-nav-link>
+                @else
+                    @if(Auth::user()->isAdmin())
+                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="font-medium">Clients</span>
+                    </x-nav-link>
                     @endif
-                @endauth
+
+                    @auth
+                        @if(Auth::user()->canAccessProjects())
+                        <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
+                            <button @click="open = !open" 
+                                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                    </svg>
+                                    <span class="font-medium">Projects</span>
+                                </div>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+
+                            <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" class="mt-1 ml-4 space-y-1">
+                                <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
+                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                    <span>• List Projects</span>
+                                </x-nav-link>
+                                <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
+                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                    <span>• Settings</span>
+                                </x-nav-link>
+                                <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
+                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                    <span>• Invoices</span>
+                                </x-nav-link>
+                            </div>
+                        </div>
+                        @endif
+                    @endauth
+                @endif
 
                 @auth
                     <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Management</div>
 
-                    <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                        </svg>
-                        <span class="font-medium">Call Logs</span>
-                    </x-nav-link>
+                    @if(Auth::user()->isAgent())
+                        <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            <span class="font-medium">Call Logs</span>
+                        </x-nav-link>
 
-                    <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                        </svg>
-                        <span class="font-medium">Tasks & Meetings</span>
-                    </x-nav-link>
+                        <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <span class="font-medium">Tasks & Meetings</span>
+                        </x-nav-link>
 
-                    @if(Auth::user()->canManageUsers())
-                    <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                        <span class="font-medium">Users</span>
-                    </x-nav-link>
+                        <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            <span class="font-medium">Chat</span>
+                        </x-nav-link>
+                    @else
+                        <x-nav-link :href="route('crm-projects.index')" :active="request()->routeIs('crm-projects.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('crm-projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                            </svg>
+                            <span class="font-medium">Project Management</span>
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            <span class="font-medium">Chat</span>
+                        </x-nav-link>
+
+                        @if(Auth::user()->isAdmin())
+                        <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            <span class="font-medium">Call Logs</span>
+                        </x-nav-link>
+                        @endif
+
+                        @if(Auth::user()->isAdmin())
+                        <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <span class="font-medium">Tasks & Meetings</span>
+                        </x-nav-link>
+                        @endif
+
+                        @if(Auth::user()->isAdmin() && Auth::user()->canManageUsers())
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <span class="font-medium">Users</span>
+                        </x-nav-link>
+                        @endif
                     @endif
                 @endauth
             </nav>
@@ -198,75 +264,133 @@
                         <span class="font-medium">Dashboard</span>
                     </x-nav-link>
 
-                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <span class="font-medium">Clients</span>
-                    </x-nav-link>
-
-                    @auth
-                        @if(Auth::user()->canAccessProjects())
-                        <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
-                            <button @click="open = !open" 
-                                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                                <div class="flex items-center gap-3">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
-                                    </svg>
-                                    <span class="font-medium">Projects</span>
-                                </div>
-                                <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
-
-                            <div x-show="open" class="mt-1 ml-4 space-y-1">
-                                <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
-                                    <span>• List Projects</span>
-                                </x-nav-link>
-                                <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
-                                    <span>• Settings</span>
-                                </x-nav-link>
-                                <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
-                                    <span>• Invoices</span>
-                                </x-nav-link>
-                            </div>
-                        </div>
+                    @if(Auth::user()->isAgent())
+                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="font-medium">Clients</span>
+                        </x-nav-link>
+                    @else
+                        @if(Auth::user()->isAdmin())
+                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="font-medium">Clients</span>
+                        </x-nav-link>
                         @endif
-                    @endauth
+
+                        @auth
+                            @if(Auth::user()->canAccessProjects())
+                            <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
+                                <button @click="open = !open" 
+                                    class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                    <div class="flex items-center gap-3">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                        </svg>
+                                        <span class="font-medium">Projects</span>
+                                    </div>
+                                    <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+
+                                <div x-show="open" class="mt-1 ml-4 space-y-1">
+                                    <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
+                                        <span>• List Projects</span>
+                                    </x-nav-link>
+                                    <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
+                                        <span>• Settings</span>
+                                    </x-nav-link>
+                                    <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
+                                        <span>• Invoices</span>
+                                    </x-nav-link>
+                                </div>
+                            </div>
+                            @endif
+                        @endauth
+                    @endif
 
                     @auth
                         <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Management</div>
 
-                        <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                            </svg>
-                            <span class="font-medium">Call Logs</span>
-                        </x-nav-link>
+                        @if(Auth::user()->isAgent())
+                            <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                <span class="font-medium">Call Logs</span>
+                            </x-nav-link>
 
-                        <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                            </svg>
-                            <span class="font-medium">Tasks & Meetings</span>
-                        </x-nav-link>
+                            <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                                <span class="font-medium">Tasks & Meetings</span>
+                            </x-nav-link>
 
-                        @if(Auth::user()->canManageUsers())
-                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                            <span class="font-medium">Users</span>
-                        </x-nav-link>
+                            <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                </svg>
+                                <span class="font-medium">Chat</span>
+                            </x-nav-link>
+                        @else
+                            <x-nav-link :href="route('crm-projects.index')" :active="request()->routeIs('crm-projects.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('crm-projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                </svg>
+                                <span class="font-medium">Project Management</span>
+                            </x-nav-link>
+
+                            <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                </svg>
+                                <span class="font-medium">Chat</span>
+                            </x-nav-link>
+
+                            @if(Auth::user()->isAdmin())
+                            <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                </svg>
+                                <span class="font-medium">Call Logs</span>
+                            </x-nav-link>
+                            @endif
+
+                            @if(Auth::user()->isAdmin())
+                            <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                                <span class="font-medium">Tasks & Meetings</span>
+                            </x-nav-link>
+                            @endif
+
+                            @if(Auth::user()->isAdmin() && Auth::user()->canManageUsers())
+                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                                <span class="font-medium">Users</span>
+                            </x-nav-link>
+                            @endif
                         @endif
                     @endauth
                 </nav>
@@ -311,12 +435,96 @@
                         </svg>
                     </div>
 
-                    <button class="relative p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                        </svg>
-                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
+                    <div class="relative" x-data="{ open: false }">
+                        @php
+                            $user = auth()->user();
+                            // Query projects with end_date
+                            $notificationProjectsQuery = \App\Models\Project::with(['crmDetails', 'assignees'])
+                                ->whereHas('crmDetails', function($q) {
+                                    $q->whereNotNull('end_date')->where('status', '!=', 'Completed');
+                                });
+                            
+                            // If not admin/manager/project-manager, filter by assignee
+                            if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+                                $notificationProjectsQuery->whereHas('assignees', function($q) use ($user) {
+                                    $q->where('users.id', $user->id);
+                                });
+                            }
+                            
+                            $allNotificationProjects = $notificationProjectsQuery->get();
+                            
+                            // Filter in memory for projects ending within 3 days or overdue
+                            $incomingNotifications = [];
+                            foreach($allNotificationProjects as $p) {
+                                if ($p->crmDetails && $p->crmDetails->end_date) {
+                                    $endDate = \Carbon\Carbon::parse($p->crmDetails->end_date)->startOfDay();
+                                    $today = \Carbon\Carbon::today();
+                                    $daysLeft = $today->diffInDays($endDate, false);
+                                    
+                                    // Ending in 3 days or overdue
+                                    if ($daysLeft <= 3) {
+                                        $incomingNotifications[] = [
+                                            'id' => $p->id,
+                                            'title' => $p->title,
+                                            'days_left' => $daysLeft,
+                                        ];
+                                    }
+                                }
+                            }
+                            $unreadCount = count($incomingNotifications);
+                        @endphp
+                        
+                        <button @click="open = !open" class="relative p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            @if($unreadCount > 0)
+                                <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                            @endif
+                        </button>
+                        
+                        <!-- Notifications Dropdown Menu -->
+                        <div x-show="open" 
+                             @click.away="open = false" 
+                             x-transition:enter="transition ease-out duration-100" 
+                             x-transition:enter-start="transform opacity-0 scale-95" 
+                             x-transition:enter-end="transform opacity-100 scale-100" 
+                             x-transition:leave="transition ease-in duration-75" 
+                             x-transition:leave-start="transform opacity-100 scale-100" 
+                             x-transition:leave-end="transform opacity-0 scale-95" 
+                             class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-50 overflow-hidden" 
+                             style="display: none;">
+                            <div class="px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">Timeline Alerts</span>
+                                <span class="text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">{{ $unreadCount }} Alerts</span>
+                            </div>
+                            <div class="max-h-72 overflow-y-auto" style="scrollbar-width: thin;">
+                                @forelse($incomingNotifications as $notification)
+                                     <a href="{{ route('crm-projects.show', $notification['id']) }}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 border-b border-gray-50 dark:border-slate-700/30 last:border-b-0 transition-colors">
+                                        <div class="flex flex-col gap-1">
+                                            <span class="text-xs font-semibold text-gray-900 dark:text-white leading-tight">{{ $notification['title'] }}</span>
+                                            <div class="mt-1">
+                                                @if($notification['days_left'] > 1)
+                                                    <span class="inline-flex items-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">Ends in {{ $notification['days_left'] }} days</span>
+                                                @elseif($notification['days_left'] == 1)
+                                                    <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Ends tomorrow</span>
+                                                @elseif($notification['days_left'] == 0)
+                                                    <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Ends today</span>
+                                                @else
+                                                    <span class="inline-flex items-center text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full">Overdue by {{ abs($notification['days_left']) }} {{ abs($notification['days_left']) == 1 ? 'day' : 'days' }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="py-8 px-4 text-center text-xs text-gray-500 dark:text-gray-400 flex flex-col items-center justify-center gap-2">
+                                        <svg class="w-8 h-8 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span>No urgent timeline alerts.</span>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
 
                     <button id="theme-toggle" class="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
                         <svg id="sun-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,8 +561,8 @@
             </div>
         </header>
 
-        <div class="flex-1 p-4 sm:p-6 lg:p-15 pt-20 sm:pt-20">
-            <div class="mx-auto">
+        <div class="{{ request()->routeIs('chat*') ? 'flex-1 pt-20 h-[calc(100vh-80px)] overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-15 pt-20 sm:pt-20' }}">
+            <div class="{{ request()->routeIs('chat*') ? 'h-full w-full' : 'mx-auto' }}">
                 @if(session('success'))
                 <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 
                      class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between transition-all">
