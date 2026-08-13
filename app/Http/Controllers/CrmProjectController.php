@@ -14,44 +14,83 @@ class CrmProjectController extends Controller
     {
         $user = auth()->user();
         $statusFilter = request()->get('status');
-        
+
         $query = \App\Models\Project::with(['crmDetails', 'assignees', 'dailyUpdates'])->orderBy('id', 'desc');
-        
+
         // If not Admin, Manager, or Project Manager, restrict to assigned projects (including Team Leads and other employees)
         if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
-            $query->whereHas('assignees', function($q) use ($user) {
+            $query->whereHas('assignees', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
         }
 
         if ($statusFilter && $statusFilter !== 'all') {
             if (strtolower($statusFilter) === 'completed') {
-                $query->whereHas('crmDetails', function($q) {
+                $query->whereHas('crmDetails', function ($q) {
                     $q->where('status', 'Completed');
                 });
             } elseif (strtolower($statusFilter) === 'active') {
-                $query->whereHas('crmDetails', function($q) {
+                $query->whereHas('crmDetails', function ($q) {
                     $q->where('status', '!=', 'Completed')
-                      ->whereNotNull('start_date')
-                      ->whereNotNull('end_date')
-                      ->where('end_date', '>=', now()->toDateString());
+                        ->whereNotNull('start_date')
+                        ->whereNotNull('end_date')
+                        ->where('end_date', '>=', now()->toDateString());
                 });
             } elseif ($statusFilter === 'overdue') {
-                $query->whereHas('crmDetails', function($q) {
+                $query->whereHas('crmDetails', function ($q) {
                     $q->where('status', '!=', 'Completed')
-                      ->whereNotNull('start_date')
-                      ->whereNotNull('end_date')
-                      ->where('end_date', '<', now()->toDateString());
+                        ->whereNotNull('start_date')
+                        ->whereNotNull('end_date')
+                        ->where('end_date', '<', now()->toDateString());
                 });
             } else {
                 $query->whereIn('status', [$statusFilter, strtolower($statusFilter), ucfirst($statusFilter)]);
             }
         }
-        
+
         $projects = $query->get();
         return view('crm-projects.index', compact('projects', 'statusFilter'));
     }
 
+    public function chatIndex(Request $request)
+    {
+        $user = auth()->user();
+
+        $projectsQuery = \App\Models\Project::with(['crmDetails', 'assignees'])
+            ->orderBy('project_name', 'asc');
+
+        // If not Admin, Manager, or Project Manager, restrict to assigned projects
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+            $projectsQuery->whereHas('assignees', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+
+        $projects = $projectsQuery->get();
+
+        $selectedProjectId = $request->get('project_id');
+        $selectedProject = null;
+        $messages = collect();
+
+        if ($projects->count() > 0) {
+            if ($selectedProjectId) {
+                $selectedProject = $projects->firstWhere('id', $selectedProjectId);
+            }
+            // Default to the first project if none selected or if selected project is not found in their allowed projects
+            if (!$selectedProject) {
+                $selectedProject = $projects->first();
+            }
+
+            if ($selectedProject) {
+                $messages = $selectedProject->messages()
+                    ->with('user')
+                    ->orderBy('created_at', 'asc')
+                    ->get();
+            }
+        }
+
+        return view('crm-projects.chat', compact('projects', 'selectedProject', 'messages'));
+    }
     public function show($projectId)
     {
         $user = auth()->user();
@@ -69,44 +108,63 @@ class CrmProjectController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('crm-projects.show', compact('project', 'dailyUpdates'));
+        $enhancements = \App\Models\ProjectEnhancement::with('user')
+            ->where('project_id', $projectId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $activities = \App\Models\ProjectActivity::with('user')
+            ->where('project_id', $projectId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('crm-projects.show', compact('project', 'dailyUpdates', 'enhancements', 'activities'));
     }
 
     public function edit($projectId)
     {
         $user = auth()->user();
-        $project = \App\Models\Project::with(['crmDetails', 'assignees'])->findOrFail($projectId);
-        
+        $project = \App\Models\Project::with([
+            'crmDetails',
+            'assignees',
+            'activities' => function ($q) {
+                $q->orderBy('created_at', 'desc');
+            },
+            'enhancements' => function ($q) {
+                $q->orderBy('created_at', 'desc');
+            }
+        ])->findOrFail($projectId);
+
         $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
         $isAssigned = $project->assignees->contains('id', $user->id);
-        
+
         $canEdit = $hasGlobalAccess || ($user->hasRole('team-lead') && $isAssigned);
-        
+
         $isCompleted = $project->crmDetails && $project->crmDetails->status === 'Completed';
         if ($isCompleted && !$hasGlobalAccess) {
             $canEdit = false;
         }
-        
+
         if (!$canEdit) {
             // Other roles are redirected to their daily updates logs
             return redirect()->route('crm-projects.daily-updates', $projectId);
         }
-        
+
         $users = \App\Models\User::orderBy('name', 'asc')->get();
-        
+
         // Filter roles and users depending on who is logged in
         if ($user->hasRole('project-manager')) {
             // Project Manager can assign to any roles except super-admin, manager, and project-manager
             $roles = \App\Models\Role::whereNotIn('name', ['super-admin', 'manager', 'project-manager'])->get();
             $allowedRoleNames = $roles->pluck('name')->toArray();
-            $users = \App\Models\User::with('roles')->whereHas('roles', function($q) use ($allowedRoleNames) {
+            $users = \App\Models\User::with('roles')->whereHas('roles', function ($q) use ($allowedRoleNames) {
                 $q->whereIn('name', $allowedRoleNames);
             })->orderBy('name', 'asc')->get();
         } elseif ($user->hasRole('team-lead')) {
             // Team Lead can assign to any roles except super-admin, manager, and project-manager
             $roles = \App\Models\Role::whereNotIn('name', ['super-admin', 'manager', 'project-manager'])->get();
             $allowedRoleNames = $roles->pluck('name')->toArray();
-            $users = \App\Models\User::with('roles')->whereHas('roles', function($q) use ($allowedRoleNames) {
+            $users = \App\Models\User::with('roles')->whereHas('roles', function ($q) use ($allowedRoleNames) {
                 $q->whereIn('name', $allowedRoleNames);
             })->orderBy('name', 'asc')->get();
         } else {
@@ -114,9 +172,9 @@ class CrmProjectController extends Controller
             $roles = \App\Models\Role::orderBy('name', 'asc')->get();
             $users = \App\Models\User::with('roles')->orderBy('name', 'asc')->get();
         }
-        
+
         $details = $project->crmDetails;
-        
+
         return view('crm-projects.edit', compact('project', 'users', 'roles', 'details'));
     }
 
@@ -124,17 +182,17 @@ class CrmProjectController extends Controller
     {
         $user = auth()->user();
         $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
-        
+
         $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
         $isAssigned = $project->assignees->contains('id', $user->id);
-        
+
         $canEdit = $hasGlobalAccess || ($user->hasRole('team-lead') && $isAssigned);
 
         $isCompleted = $project->crmDetails && $project->crmDetails->status === 'Completed';
         if ($isCompleted && !$hasGlobalAccess) {
             abort(403, 'Project is completed. Unauthorized access.');
         }
-        
+
         if (!$canEdit) {
             abort(403, 'Unauthorized access.');
         }
@@ -186,36 +244,36 @@ class CrmProjectController extends Controller
             // Ensure CrmProject record exists even if team lead is only updating assignments
             CrmProject::firstOrCreate(['project_id' => $projectId]);
         }
-        
+
         // Only update assignments if the user has permission to manage assignments
         $canManageAssignments = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('team-lead');
-        
+
         if ($canManageAssignments) {
             $assigneeIds = array_filter($request->input('assignee_ids', []));
-            
+
             if ($user->isAdmin() || $user->isManager()) {
                 // Admin and Manager can sync all assignments
                 $project->assignees()->sync($assigneeIds);
             } else {
                 $currentAssignees = $project->assignees;
-                
+
                 if ($user->hasRole('project-manager')) {
                     // Project Manager updates assignments for all employee roles (excluding super-admin, manager, and project-manager)
                     // Keep current assignees who are super-admin, manager, or project-manager
-                    $keepIds = $currentAssignees->filter(function($u) {
+                    $keepIds = $currentAssignees->filter(function ($u) {
                         return $u->hasRole('super-admin') || $u->hasRole('manager') || $u->hasRole('project-manager');
                     })->pluck('id')->toArray();
-                    
+
                     $newSyncIds = array_unique(array_merge($keepIds, $assigneeIds));
                     $project->assignees()->sync($newSyncIds);
-                    
+
                 } elseif ($user->hasRole('team-lead')) {
                     // Team Lead updates assignments for all roles except super-admin, manager, and project-manager
                     // Keep anyone who is super-admin, manager, or project-manager
-                    $keepIds = $currentAssignees->filter(function($u) {
+                    $keepIds = $currentAssignees->filter(function ($u) {
                         return $u->hasRole('super-admin') || $u->hasRole('manager') || $u->hasRole('project-manager');
                     })->pluck('id')->toArray();
-                    
+
                     $newSyncIds = array_unique(array_merge($keepIds, $assigneeIds));
                     $project->assignees()->sync($newSyncIds);
                 }
@@ -225,26 +283,134 @@ class CrmProjectController extends Controller
         return redirect()->route('crm-projects.show', $projectId)->with('success', 'Project details updated successfully.');
     }
 
+    public function storeActivity(Request $request, $projectId)
+    {
+        $user = auth()->user();
+        $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
+
+        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+        $isAssigned = $project->assignees->contains('id', $user->id);
+
+        $canEdit = $hasGlobalAccess || ($user->hasRole('team-lead') && $isAssigned);
+
+        if (!$canEdit) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $inputDesc = $request->input('change_description') ?? $request->input('activity_description') ?? $request->input('description');
+        $request->merge(['description' => $inputDesc]);
+
+        $request->validate([
+            'description' => 'nullable|string|max:65535|required_without:attachment',
+            'time_estimate' => 'nullable|string|max:100',
+            'attachment' => 'nullable|file|max:10240',
+        ]);
+
+        $attachment = $request->file('attachment');
+
+        \App\Models\ProjectActivity::create([
+            'project_id' => $projectId,
+            'user_id' => $user->id,
+            'description' => $request->description ?? '',
+            'time_estimate' => $request->time_estimate,
+            'attachment_path' => $attachment ? $attachment->store('project-attachments', 'public') : null,
+            'attachment_name' => $attachment?->getClientOriginalName(),
+        ]);
+
+        return redirect()->back()->with('success', 'Activity added successfully.');
+    }
+
+    public function storeEnhancement(Request $request, $projectId)
+    {
+        $user = auth()->user();
+        $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
+
+        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+        $isAssigned = $project->assignees->contains('id', $user->id);
+
+        $canEdit = $hasGlobalAccess || ($user->hasRole('team-lead') && $isAssigned);
+
+        if (!$canEdit) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $inputDesc = $request->input('enhancement_description') ?? $request->input('description');
+        $request->merge(['description' => $inputDesc]);
+
+        $request->validate([
+            'description' => 'nullable|string|max:65535|required_without:attachment',
+            'time_estimate' => 'nullable|string|max:100',
+            'attachment' => 'nullable|file|max:10240',
+        ]);
+
+        $attachment = $request->file('attachment');
+
+        \App\Models\ProjectEnhancement::create([
+            'project_id' => $projectId,
+            'user_id' => $user->id,
+            'description' => $request->description ?? '',
+            'time_estimate' => $request->time_estimate,
+            'attachment_path' => $attachment ? $attachment->store('project-attachments', 'public') : null,
+            'attachment_name' => $attachment?->getClientOriginalName(),
+        ]);
+
+        return redirect()->back()->with('success', 'Enhancement added successfully.');
+    }
+
+    public function sendMessage(Request $request, $projectId)
+    {
+        $user = auth()->user();
+        $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
+
+        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+        $isAssigned = $project->assignees->contains('id', $user->id);
+
+        $canChat = $hasGlobalAccess || $isAssigned;
+
+        if (!$canChat) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $message = \App\Models\ProjectMessage::create([
+            'project_id' => $projectId,
+            'user_id' => $user->id,
+            'message' => $request->message,
+        ]);
+
+        $message->load('user');
+
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $message
+        ]);
+    }
+
     public function dailyUpdatesIndex($projectId)
     {
         $user = auth()->user();
         $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
-        
+
         // Authorization: Admin, Manager, Project Manager, and Team Lead can view/post updates.
         // Other roles can view/post updates ONLY if they are assigned to this project.
         $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('team-lead');
         $isAssigned = $project->assignees->contains('id', $user->id);
-        
+
         if (!$hasGlobalAccess && !$isAssigned) {
             abort(403, 'Unauthorized access. You are not assigned to this project.');
         }
-        
+
         $dailyUpdates = ProjectDailyUpdate::with(['user', 'attachments'])
             ->where('project_id', $projectId)
             ->orderBy('log_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         return view('crm-projects.daily-updates', compact('project', 'dailyUpdates'));
     }
 
@@ -252,10 +418,10 @@ class CrmProjectController extends Controller
     {
         $user = auth()->user();
         $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
-        
+
         $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('team-lead');
         $isAssigned = $project->assignees->contains('id', $user->id);
-        
+
         if (!$hasGlobalAccess && !$isAssigned) {
             abort(403, 'Unauthorized access.');
         }
@@ -265,14 +431,14 @@ class CrmProjectController extends Controller
         if ($isCompleted && !$hasSuperAccess) {
             abort(403, 'Project is completed. You cannot add daily updates.');
         }
-        
+
         $data = $request->validate([
             'log_date' => 'required|date',
             'log_time' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
-            'attachment' => 'nullable|file|max:10240', // max 10MB
+            'attachment' => 'nullable|file', // no max size
         ]);
-        
+
         $dailyUpdate = ProjectDailyUpdate::create([
             'project_id' => $projectId,
             'user_id' => $user->id,
@@ -293,7 +459,7 @@ class CrmProjectController extends Controller
                 'file_size' => $file->getSize(),
             ]);
         }
-        
+
         return redirect()->route('crm-projects.show', $projectId)
             ->with('success', 'Daily update logged successfully.');
     }
@@ -301,12 +467,12 @@ class CrmProjectController extends Controller
     {
         $user = auth()->user();
         $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
-        
+
         $update = \App\Models\ProjectDailyUpdate::where('project_id', $projectId)->findOrFail($updateId);
-        
+
         $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
         $isOwner = $update->user_id === $user->id;
-        
+
         if (!$hasGlobalAccess && !$isOwner) {
             abort(403, 'Unauthorized access. You can only edit your own updates.');
         }
@@ -315,15 +481,15 @@ class CrmProjectController extends Controller
         if ($isCompleted && !$hasGlobalAccess) {
             abort(403, 'Project is completed. You cannot edit daily updates.');
         }
-        
+
         $data = $request->validate([
             'notes' => 'nullable|string',
         ]);
-        
+
         $update->update([
             'notes' => $data['notes'] ?? '',
         ]);
-        
+
         return redirect()->route('crm-projects.show', $projectId)
             ->with('success', 'Daily update edited successfully.');
     }
@@ -450,5 +616,51 @@ class CrmProjectController extends Controller
         }
 
         return Storage::disk('public')->response($update->attachment_path, $update->attachment_name ?? basename($update->attachment_path));
+    }
+
+    public function activityAttachmentShow($activityId)
+    {
+        $user = auth()->user();
+        $activity = \App\Models\ProjectActivity::with('project.assignees')->findOrFail($activityId);
+        $project = $activity->project;
+
+        if (!$project) {
+            abort(404, 'Project not found.');
+        }
+
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+            if (!$project->assignees->contains('id', $user->id)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        if (!$activity->attachment_path || !Storage::disk('public')->exists($activity->attachment_path)) {
+            abort(404, 'Attachment file not found.');
+        }
+
+        return Storage::disk('public')->response($activity->attachment_path, $activity->attachment_name ?? basename($activity->attachment_path));
+    }
+
+    public function enhancementAttachmentShow($enhancementId)
+    {
+        $user = auth()->user();
+        $enhancement = \App\Models\ProjectEnhancement::with('project.assignees')->findOrFail($enhancementId);
+        $project = $enhancement->project;
+
+        if (!$project) {
+            abort(404, 'Project not found.');
+        }
+
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+            if (!$project->assignees->contains('id', $user->id)) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        if (!$enhancement->attachment_path || !Storage::disk('public')->exists($enhancement->attachment_path)) {
+            abort(404, 'Attachment file not found.');
+        }
+
+        return Storage::disk('public')->response($enhancement->attachment_path, $enhancement->attachment_name ?? basename($enhancement->attachment_path));
     }
 }

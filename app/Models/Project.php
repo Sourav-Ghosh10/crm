@@ -61,6 +61,21 @@ class Project extends Model
         return $this->hasMany(ProjectDailyUpdate::class, 'project_id');
     }
 
+    public function activities()
+    {
+        return $this->hasMany(ProjectActivity::class, 'project_id');
+    }
+
+    public function enhancements()
+    {
+        return $this->hasMany(ProjectEnhancement::class, 'project_id');
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(ProjectMessage::class, 'project_id');
+    }
+
     protected static function booted()
     {
         static::creating(function ($project) {
