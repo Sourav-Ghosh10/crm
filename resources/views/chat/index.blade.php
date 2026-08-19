@@ -32,6 +32,7 @@
                                 $isSelected = $selectedRoom && $selectedRoom->id === $r->id;
                             @endphp
                             <a href="{{ route('chat.index', ['room_id' => $r->id]) }}"
+                                id="room-link-{{ $r->id }}"
                                 class="flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-all duration-150 {{ $isSelected ? 'bg-[#3f4550] text-white font-semibold' : 'text-slate-400 hover:bg-[#2a2f37] hover:text-slate-200' }}">
                                 <span class="text-sm text-slate-500 font-bold">#</span>
                                 <span class="truncate">{{ $r->display_name }}</span>
@@ -59,6 +60,7 @@
                                 $avatarColor = $colors[$r->id % count($colors)];
                             @endphp
                             <a href="{{ route('chat.index', ['room_id' => $r->id]) }}"
+                                id="room-link-{{ $r->id }}"
                                 class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 {{ $isSelected ? 'bg-[#3f4550] text-white font-semibold' : 'text-slate-400 hover:bg-[#2a2f37] hover:text-slate-200' }}">
 
                                 <!-- Small Avatar Circle -->
@@ -1039,6 +1041,12 @@
                                     
                                     this.seenMessageIds.add(msg.id);
 
+                                    // Bump room to the top of its section
+                                    const link = document.getElementById(`room-link-${id}`);
+                                    if (link && link.parentNode) {
+                                        link.parentNode.prepend(link);
+                                    }
+
                                     if (id === this.roomId) {
                                         // Active room
                                         const shouldFollow = this.isNearBottom();
@@ -1347,6 +1355,12 @@
                         // Track sent message so Echo event doesn't duplicate it
                         this.seenMessageIds.add(sentMsg.id);
                         this.messages.push(sentMsg);
+
+                        // Bump active room to the top of its section
+                        const link = document.getElementById(`room-link-${this.roomId}`);
+                        if (link && link.parentNode) {
+                            link.parentNode.prepend(link);
+                        }
 
                         this.newMessage = '';
                         if (this.$refs.messageInput) {

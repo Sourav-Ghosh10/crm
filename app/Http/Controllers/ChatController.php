@@ -42,7 +42,11 @@ class ChatController extends Controller
                 // Get latest message
                 $room->latest_message = $room->messages->first();
                 return $room;
-            });
+            })
+            ->sortByDesc(function ($room) {
+                return $room->latest_message ? $room->latest_message->created_at : $room->created_at;
+            })
+            ->values();
 
         // Fetch all other users for starting DMs
         $users = User::where('id', '!=', $user->id)
@@ -179,6 +183,22 @@ class ChatController extends Controller
         $message->load('user');
 
         broadcast(new ChatMessageSent($message))->toOthers();
+
+        // Send FCM Push Notification
+        $otherMembers = $room->members()->where('users.id', '!=', $user->id)->get();
+        foreach ($otherMembers as $member) {
+            if ($member->fcm_token) {
+                \App\Services\FcmService::sendNotification(
+                    $member->fcm_token,
+                    "New message from " . $user->name,
+                    strlen($message->message) > 0 ? $message->message : ($message->attachment_name ?? 'Attachment'),
+                    [
+                        'room_id' => (string) $room->id,
+                        'type' => 'chat'
+                    ]
+                );
+            }
+        }
 
         return response()->json([
             'status' => 'success',

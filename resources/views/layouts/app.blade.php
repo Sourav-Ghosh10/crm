@@ -614,6 +614,10 @@
             updateThemeIcons();
         });
     </script>
+
+    @auth
+        @include('partials.firebase-init')
+    @endauth
 </body>
 
 </html>
