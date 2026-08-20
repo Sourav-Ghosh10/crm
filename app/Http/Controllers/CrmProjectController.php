@@ -17,8 +17,8 @@ class CrmProjectController extends Controller
 
         $query = \App\Models\Project::with(['crmDetails', 'assignees', 'dailyUpdates'])->orderBy('id', 'desc');
 
-        // If not Admin, Manager, or Project Manager, restrict to assigned projects (including Team Leads and other employees)
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        // If not Admin, or Manager, restrict to assigned projects (including Project Manager, Team Leads and other employees)
+        if (!$user->isAdmin() && !$user->isManager()) {
             $query->whereHas('assignees', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
@@ -59,8 +59,8 @@ class CrmProjectController extends Controller
         $projectsQuery = \App\Models\Project::with(['crmDetails', 'assignees'])
             ->orderBy('project_name', 'asc');
 
-        // If not Admin, Manager, or Project Manager, restrict to assigned projects
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        // If not Admin, Manager, restrict to assigned projects
+        if (!$user->isAdmin() && !$user->isManager()) {
             $projectsQuery->whereHas('assignees', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
@@ -96,7 +96,7 @@ class CrmProjectController extends Controller
         $user = auth()->user();
         $project = \App\Models\Project::with(['crmDetails', 'assignees', 'dailyUpdates'])->findOrFail($projectId);
 
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -500,7 +500,7 @@ class CrmProjectController extends Controller
         $project = \App\Models\Project::findOrFail($projectId);
 
         // Security check
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -520,7 +520,7 @@ class CrmProjectController extends Controller
         $project = \App\Models\Project::findOrFail($projectId);
 
         // Security check
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -535,7 +535,7 @@ class CrmProjectController extends Controller
         $project = \App\Models\Project::findOrFail($projectId);
 
         // Security check
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -563,7 +563,7 @@ class CrmProjectController extends Controller
         $document = \App\Models\ProjectDocument::where('project_id', $projectId)->findOrFail($documentId);
 
         // Security check
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -582,7 +582,7 @@ class CrmProjectController extends Controller
             abort(404, 'Attachment project not found.');
         }
 
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -605,7 +605,7 @@ class CrmProjectController extends Controller
             abort(404, 'Project not found.');
         }
 
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -628,7 +628,7 @@ class CrmProjectController extends Controller
             abort(404, 'Project not found.');
         }
 
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }
@@ -651,7 +651,7 @@ class CrmProjectController extends Controller
             abort(404, 'Project not found.');
         }
 
-        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
+        if (!$user->isAdmin() && !$user->isManager()) {
             if (!$project->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }

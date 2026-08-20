@@ -1,0 +1,225 @@
+﻿diff --git a/resources/views/layouts/app.blade.php b/resources/views/layouts/app.blade.php
+index f4a1466..35d2881 100644
+--- a/resources/views/layouts/app.blade.php
++++ b/resources/views/layouts/app.blade.php
+@@ -6,7 +6,23 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <meta name="csrf-token" content="{{ csrf_token() }}">
+ 
+-    <title>{{ config('app.name', 'CRM') }}</title>
++    @php
++        $globalUnreadChatCount = 0;
++        if(auth()->check()) {
++            $user = auth()->user();
++            $globalUnreadChatCount = $user->chatRooms()
++                ->withCount(['messages as unread_count' => function ($query) use ($user) {
++                    $query->where('user_id', '!=', $user->id)
++                          ->where(function($q) {
++                              $q->whereNull('chat_room_members.last_read_at')
++                                ->orWhereColumn('chat_messages.created_at', '>', 'chat_room_members.last_read_at');
++                          });
++                }])
++                ->get()
++                ->sum('unread_count');
++        }
++    @endphp
++    <title>{{ $globalUnreadChatCount > 0 ? "({$globalUnreadChatCount}) New Message" . ($globalUnreadChatCount > 1 ? 's' : '') . " - " : "" }}{{ config('app.name', 'CRM') }}</title>
+ 
+     <!-- Fonts -->
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+@@ -146,7 +162,8 @@ class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all dura
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                             </svg>
+-                            <span class="font-medium">Chat</span>
++                            <span class="font-medium flex-1">Chat</span>
++                            <span class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style="display: {{ $globalUnreadChatCount > 0 ? 'inline-block' : 'none' }};">{{ $globalUnreadChatCount }}</span>
+                         </x-nav-link>
+                     @else
+                         <x-nav-link :href="route('crm-projects.index')" :active="request()->routeIs('crm-projects.*')"
+@@ -162,7 +179,8 @@ class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all dura
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                             </svg>
+-                            <span class="font-medium">Chat</span>
++                            <span class="font-medium flex-1">Chat</span>
++                            <span class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style="display: {{ $globalUnreadChatCount > 0 ? 'inline-block' : 'none' }};">{{ $globalUnreadChatCount }}</span>
+                         </x-nav-link>
+ 
+                         @if(Auth::user()->isAdmin())
+@@ -343,7 +361,8 @@ class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->route
+                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                 </svg>
+-                                <span class="font-medium">Chat</span>
++                                <span class="font-medium flex-1">Chat</span>
++                                <span class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style="display: {{ $globalUnreadChatCount > 0 ? 'inline-block' : 'none' }};">{{ $globalUnreadChatCount }}</span>
+                             </x-nav-link>
+                         @else
+                             <x-nav-link :href="route('crm-projects.index')" :active="request()->routeIs('crm-projects.*')"
+@@ -359,7 +378,8 @@ class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->route
+                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                 </svg>
+-                                <span class="font-medium">Chat</span>
++                                <span class="font-medium flex-1">Chat</span>
++                                <span class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style="display: {{ $globalUnreadChatCount > 0 ? 'inline-block' : 'none' }};">{{ $globalUnreadChatCount }}</span>
+                             </x-nav-link>
+ 
+                             @if(Auth::user()->isAdmin())
+@@ -617,7 +637,155 @@ function updateThemeIcons() {
+ 
+     @auth
+         @include('partials.firebase-init')
++        
++        <!-- Global Toast Notification Container -->
++        <div x-data="{ toasts: [] }" 
++             @chat-message-received.window="toasts.push({ id: Date.now(), msg: $event.detail.msg, sender: $event.detail.sender }); setTimeout(() => { toasts.shift() }, 5000)"
++             class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
++            
++            <template x-for="toast in toasts" :key="toast.id">
++                <div x-show="true" 
++                     x-transition:enter="transition ease-out duration-300"
++                     x-transition:enter-start="opacity-0 translate-y-4"
++                     x-transition:enter-end="opacity-100 translate-y-0"
++                     x-transition:leave="transition ease-in duration-200"
++                     x-transition:leave-start="opacity-100"
++                     x-transition:leave-end="opacity-0"
++                     class="pointer-events-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xl rounded-xl p-4 w-80 max-w-[90vw] flex items-start gap-3 relative overflow-hidden group cursor-pointer"
++                     @click="window.location.href='/chat?room=' + toast.msg.chat_room_id">
++                    
++                    <!-- Decorative side bar -->
++                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
++
++                    <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shrink-0 border border-indigo-200 dark:border-indigo-800">
++                        <span x-text="toast.sender.substring(0, 2).toUpperCase()"></span>
++                    </div>
++                    
++                    <div class="flex-1 min-w-0 pr-4">
++                        <h4 class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="toast.sender"></h4>
++                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate" x-text="toast.msg.message || 'Sent an attachment'"></p>
++                    </div>
++
++                    <button @click.stop="toasts = toasts.filter(t => t.id !== toast.id)" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 absolute right-3 top-3">
++                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
++                    </button>
++                </div>
++            </template>
++        </div>
++
++        <script>
++            document.addEventListener('DOMContentLoaded', function () {
++                if (window.Echo) {
++                    const audio = new Audio("{{ asset('notification.wav') }}");
++                    
++                    // Pre-load the audio context if possible on user interaction
++                    const unlockAudio = () => {
++                        audio.volume = 0; // Mute during unlock
++                        audio.play().then(() => {
++                            audio.pause();
++                            audio.currentTime = 0;
++                            audio.volume = 1; // Restore volume
++                            document.removeEventListener('click', unlockAudio);
++                            document.removeEventListener('touchstart', unlockAudio);
++                            document.removeEventListener('keydown', unlockAudio);
++                        }).catch(() => {
++                            audio.volume = 1; // Restore volume on error
++                        });
++                    };
++                    document.addEventListener('click', unlockAudio);
++                    document.addEventListener('touchstart', unlockAudio);
++                    document.addEventListener('keydown', unlockAudio);
++
++                    const currentUserId = {{ auth()->id() }};
++                    
++                    window.Echo.private(`App.Models.User.${currentUserId}`)
++                        .listen('.ChatMessageSent', (e) => {
++                            const id = e.message.chat_room_id;
++                            // Only process if message is not from the current user
++                            if (e.message && e.message.user_id !== currentUserId) {
++                                // Play sound for EVERY new incoming message
++                                audio.currentTime = 0;
++                                audio.play().catch(err => console.log('Audio autoplay blocked:', err));
++                                    
++                                    // Update unread badge and document title if not in active room
++                                    const isChatPage = window.location.pathname.includes('/chat');
++                                    const urlParams = new URLSearchParams(window.location.search);
++                                    const activeRoomId = urlParams.get('room_id');
++                                    
++                                    if (!isChatPage || activeRoomId != id) {
++                                        // Increment unread count badges
++                                        let unreadBadges = document.querySelectorAll('.chat-unread-badge');
++                                        let currentCount = 0;
++                                        unreadBadges.forEach(badge => {
++                                            currentCount = parseInt(badge.textContent || '0');
++                                            badge.textContent = currentCount + 1;
++                                            badge.style.display = 'inline-block';
++                                        });
++                                        
++                                        // Update browser tab title dynamically
++                                        let count = currentCount + 1;
++                                        document.title = `(${count}) New Message${count > 1 ? 's' : ''} - {{ config('app.name', 'CRM') }}`;
++                                        
++                                        // Update specific Direct Message conversation unread badge immediately
++                                        let roomBadge = document.getElementById('unread-badge-' + id);
++                                        if (roomBadge) {
++                                            let roomCount = parseInt(roomBadge.textContent || '0');
++                                            roomBadge.textContent = roomCount + 1;
++                                            roomBadge.style.display = 'inline-block';
++                                        } else if (isChatPage && e.message.room) {
++                                            let isGroup = e.message.room.is_group;
++                                            let containerId = isGroup ? 'channel-list-container' : 'dm-list-container';
++                                            let container = document.getElementById(containerId);
++                                            
++                                            if (container) {
++                                                let displayName = isGroup ? e.message.room.name : (e.message.user ? e.message.user.name : 'Unknown');
++                                                let initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 1).toUpperCase();
++                                                let colors = ['#3b82f6', '#a855f7', '#ec4899', '#10b981', '#f59e0b', '#f43f5e'];
++                                                let avatarColor = colors[id % colors.length];
++                                                let chatUrl = window.location.pathname + '?room_id=' + id;
++                                                
++                                                let html = '';
++                                                if (isGroup) {
++                                                    html = `
++                                                        <a href="${chatUrl}" id="room-link-${id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-all duration-150 text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:hover:text-slate-200">
++                                                            <span class="text-sm text-slate-500 font-bold">#</span>
++                                                            <span class="truncate flex-1">${displayName}</span>
++                                                            <span id="unread-badge-${id}" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">1</span>
++                                                        </a>
++                                                    `;
++                                                } else {
++                                                    html = `
++                                                        <a href="${chatUrl}" id="room-link-${id}" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:hover:text-slate-200">
++                                                            <div style="background-color: ${avatarColor};" class="w-5 h-5 rounded flex items-center justify-center font-extrabold text-[9px] shrink-0 text-white shadow-sm">
++                                                                ${initials}
++                                                            </div>
++                                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
++                                                            <span class="truncate flex-1">${displayName}</span>
++                                                            <span id="unread-badge-${id}" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">1</span>
++                                                        </a>
++                                                    `;
++                                                }
++                                                container.insertAdjacentHTML('afterbegin', html);
++                                            }
++                                        }
++                                    }
++
++                                    // Show Toast (if not on chat page, or if on chat page but different room)
++                                    if (!isChatPage || activeRoomId != id) {
++                                        window.dispatchEvent(new CustomEvent('chat-message-received', {
++                                            detail: {
++                                                msg: e.message,
++                                                sender: e.message.user?.name || 'Someone'
++                                            }
++                                        }));
++                                    }
++                                }
++                            });
++                }
++            });
++        </script>
+     @endauth
+ </body>
+ 
+ </html>
++

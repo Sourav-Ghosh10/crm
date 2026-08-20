@@ -134,7 +134,7 @@ class User extends Authenticatable
      */
     public function canAccessProjects(): bool
     {
-        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager() || $this->hasRole('project-manager');
+        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager();
     }
 
     /**

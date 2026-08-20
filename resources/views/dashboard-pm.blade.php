@@ -298,6 +298,7 @@
             </div>
 
             <!-- Quick Actions (Purple Gradient Card) -->
+            @if(auth()->user()->isAdmin())
             <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white overflow-hidden relative group shadow-lg shadow-indigo-600/10">
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl transition-transform group-hover:scale-150 duration-700"></div>
                 <h3 class="text-lg font-semibold mb-6 relative z-10">Quick Actions</h3>
@@ -343,6 +344,7 @@
                     </a>
                 </div>
             </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

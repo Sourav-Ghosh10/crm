@@ -309,7 +309,9 @@
 
                             @php
                                 $user = auth()->user();
-                                $canManageAssignments = auth()->user()->isAdmin() || auth()->user()->isManager() || auth()->user()->hasRole('project-manager') || auth()->user()->hasRole('team-lead');
+                                $hasRoleToManageAssignments = auth()->user()->isAdmin() || auth()->user()->isManager() || auth()->user()->hasRole('project-manager') || auth()->user()->hasRole('team-lead');
+                                $isCompleted = $crmStatus === 'Completed';
+                                $canManageAssignments = $hasRoleToManageAssignments && !$isCompleted;
                             @endphp
                             @if(true)
                                     @php
@@ -396,15 +398,26 @@
                                                 @error('assignee_ids') <span
                                                 class="text-xs text-red-500 mt-1 block">{{ $message }}</span> @enderror
                                             </div>
-                                            @if($canManageAssignments)
-                                                <button type="button" @click="addAssignee"
-                                                    class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                                                    <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                                    </svg>
-                                                    Add Assignee
-                                                </button>
+                                            @if($hasRoleToManageAssignments)
+                                                @if($isCompleted)
+                                                    <button type="button" onclick="alert('The project is completed. Please reopen the project to add assignees.')"
+                                                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                                        <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                        </svg>
+                                                        Add Assignee
+                                                    </button>
+                                                @else
+                                                    <button type="button" @click="addAssignee"
+                                                        class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-400 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                                        <svg class="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                        </svg>
+                                                        Add Assignee
+                                                    </button>
+                                                @endif
                                             @endif
                                         </div>
 
@@ -644,8 +657,8 @@
                                 @csrf
                                 <div class="mb-3" x-data="{ fileName: '' }">
                                     <div class="relative flex items-center bg-slate-900/50 dark:bg-slate-900/70 border border-slate-700/80 focus-within:border-indigo-500 rounded-lg overflow-hidden transition-colors">
-                                        <input type="file" name="attachment" x-ref="changeAttachment" @change="fileName = $event.target.files[0]?.name || ''" class="hidden">
-                                        <button type="button" @click="$refs.changeAttachment.click()"
+                                        <input type="file" name="attachment" x-ref="changeAttachment" @change="fileName = $event.target.files[0]?.name || ''" class="hidden" {{ $isCompleted ? 'disabled' : '' }}>
+                                        <button type="button" @click="{{ $isCompleted ? 'alert(\'The project is completed. Please reopen to attach files.\')' : '$refs.changeAttachment.click()' }}"
                                             class="ml-3 shrink-0 text-slate-400 hover:text-white transition-colors"
                                             :class="{'text-indigo-400': fileName}"
                                             title="Attach a file">
@@ -656,8 +669,8 @@
                                         <textarea name="change_description" id="change-description-input" autocomplete="off" rows="1"
                                             @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 140) + 'px'"
                                             style="background-color: transparent !important; color: #e2e8f0 !important; border: 0 !important; box-shadow: none !important; resize: none; max-height: 140px; min-height: 44px; outline: none !important;"
-                                            class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-400 focus:ring-0 text-sm py-3 px-3 focus:outline-none custom-scrollbar"
-                                            placeholder="What changed?" :required="!fileName">{{ old('change_description') }}</textarea>
+                                            class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-400 focus:ring-0 text-sm py-3 px-3 focus:outline-none custom-scrollbar {{ $isCompleted ? 'cursor-not-allowed opacity-75' : '' }}"
+                                            placeholder="What changed?" :required="!fileName" {{ $isCompleted ? 'disabled' : '' }}>{{ old('change_description') }}</textarea>
                                     </div>
 
                                     <!-- Attachment file indicator pill -->
@@ -683,20 +696,31 @@
                                             </svg>
                                         </div>
                                         <input type="text" name="time_estimate"
-                                            class="block w-full rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm transition-colors"
-                                            style="padding-left: 2.25rem; padding-right: 3rem;" placeholder="e.g. 2">
+                                            class="block w-full rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm transition-colors {{ $isCompleted ? 'opacity-75 cursor-not-allowed bg-gray-100 dark:bg-slate-800/40' : '' }}"
+                                            style="padding-left: 2.25rem; padding-right: 3rem;" placeholder="e.g. 2" {{ $isCompleted ? 'disabled' : '' }}>
                                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <span class="text-xs text-gray-400 dark:text-gray-400 font-medium">hrs</span>
                                         </div>
                                     </div>
-                                    <button type="submit"
-                                        class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Add Change
-                                    </button>
+                                    @if($isCompleted)
+                                        <button type="button" onclick="alert('The project is completed. Please reopen the project to add changes.')"
+                                            class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Add Change
+                                        </button>
+                                    @else
+                                        <button type="submit"
+                                            class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Add Change
+                                        </button>
+                                    @endif
                                 </div>
                             </form>
 
@@ -806,8 +830,8 @@
                                 @csrf
                                 <div class="mb-3" x-data="{ fileName: '' }">
                                     <div class="relative flex items-center bg-slate-900/50 dark:bg-slate-900/70 border border-slate-700/80 focus-within:border-indigo-500 rounded-lg overflow-hidden transition-colors">
-                                        <input type="file" name="attachment" x-ref="enhancementAttachment" @change="fileName = $event.target.files[0]?.name || ''" class="hidden">
-                                        <button type="button" @click="$refs.enhancementAttachment.click()"
+                                        <input type="file" name="attachment" x-ref="enhancementAttachment" @change="fileName = $event.target.files[0]?.name || ''" class="hidden" {{ $isCompleted ? 'disabled' : '' }}>
+                                        <button type="button" @click="{{ $isCompleted ? 'alert(\'The project is completed. Please reopen to attach files.\')' : '$refs.enhancementAttachment.click()' }}"
                                             class="ml-3 shrink-0 text-slate-400 hover:text-white transition-colors"
                                             :class="{'text-indigo-400': fileName}"
                                             title="Attach a file">
@@ -818,8 +842,8 @@
                                         <textarea name="enhancement_description" id="enhancement-description-input" autocomplete="off" rows="1"
                                             @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 140) + 'px'"
                                             style="background-color: transparent !important; color: #e2e8f0 !important; border: 0 !important; box-shadow: none !important; resize: none; max-height: 140px; min-height: 44px; outline: none !important;"
-                                            class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-400 focus:ring-0 text-sm py-3 px-3 focus:outline-none custom-scrollbar"
-                                            placeholder="What enhancement?" :required="!fileName">{{ old('enhancement_description') }}</textarea>
+                                            class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-400 focus:ring-0 text-sm py-3 px-3 focus:outline-none custom-scrollbar {{ $isCompleted ? 'cursor-not-allowed opacity-75' : '' }}"
+                                            placeholder="What enhancement?" :required="!fileName" {{ $isCompleted ? 'disabled' : '' }}>{{ old('enhancement_description') }}</textarea>
                                     </div>
 
                                     <!-- Attachment file indicator pill -->
@@ -843,20 +867,31 @@
                                             </svg>
                                         </div>
                                         <input type="text" name="time_estimate"
-                                            class="block w-full rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm transition-colors"
-                                            style="padding-left: 2.25rem; padding-right: 3rem;" placeholder="e.g. 2">
+                                            class="block w-full rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm transition-colors {{ $isCompleted ? 'opacity-75 cursor-not-allowed bg-gray-100 dark:bg-slate-800/40' : '' }}"
+                                            style="padding-left: 2.25rem; padding-right: 3rem;" placeholder="e.g. 2" {{ $isCompleted ? 'disabled' : '' }}>
                                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <span class="text-xs text-gray-400 dark:text-gray-400 font-medium">hrs</span>
                                         </div>
                                     </div>
-                                    <button type="submit"
-                                        class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Add Enhancement
-                                    </button>
+                                    @if($isCompleted)
+                                        <button type="button" onclick="alert('The project is completed. Please reopen the project to add enhancements.')"
+                                            class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Add Enhancement
+                                        </button>
+                                    @else
+                                        <button type="submit"
+                                            class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            Add Enhancement
+                                        </button>
+                                    @endif
                                 </div>
                             </form>
 

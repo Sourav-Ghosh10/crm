@@ -20,19 +20,26 @@ class ProjectController extends Controller
     {
         $statusFilter = $request->get('status');
         $search = $request->get('search');
+        $user = auth()->user();
 
-        $projects = Project::query()
+        $projectsQuery = Project::query()
             ->withSum('projectAmounts as calculated_base_amount', 'project_amount')
             ->withSum('projectAmounts as calculated_total_amount', 'total_amount')
             ->withSum('payments as calculated_paid_amount', 'amount')
             ->orderBy('id', 'desc');
 
+        if (!$user->isAdmin() && !$user->isManager()) {
+            $projectsQuery->whereHas('assignees', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+
         if ($statusFilter && $statusFilter !== 'all') {
-            $projects->where('status', $statusFilter);
+            $projectsQuery->where('status', $statusFilter);
         }
 
         if ($search) {
-            $projects->where(function ($q) use ($search) {
+            $projectsQuery->where(function ($q) use ($search) {
                 $q->where('project_name', 'like', "%{$search}%")
                     ->orWhere('client_name', 'like', "%{$search}%")
                     ->orWhere('customer_company', 'like', "%{$search}%")
@@ -40,15 +47,28 @@ class ProjectController extends Controller
             });
         }
 
-        $projects = $projects->get();
+        $projects = $projectsQuery->get();
 
         // Calculate real stats with currency conversion
         $settings = Setting::getConfig();
         $defaultCurrency = '₹'; // Revenue box is specifically requested in INR
 
-        $allPayments = Payment::join('codec_projects', 'codec_payments.project_id', '=', 'codec_projects.id')
-            ->select('codec_payments.amount', 'codec_projects.project_currency')
-            ->get();
+        $statsBaseQuery = Project::query();
+        if (!$user->isAdmin() && !$user->isManager()) {
+            $statsBaseQuery->whereHas('assignees', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+        $allowedProjectIds = $statsBaseQuery->pluck('id');
+
+        $paymentsQuery = Payment::join('codec_projects', 'codec_payments.project_id', '=', 'codec_projects.id')
+            ->select('codec_payments.amount', 'codec_projects.project_currency');
+
+        if (!$user->isAdmin() && !$user->isManager()) {
+            $paymentsQuery->whereIn('codec_projects.id', $allowedProjectIds);
+        }
+
+        $allPayments = $paymentsQuery->get();
 
         $totalRevenueINR = 0;
         $rates = collect($settings->currency_conversion_rates ?? []);
@@ -81,9 +101,9 @@ class ProjectController extends Controller
         }
 
         $stats = [
-            'total' => Project::count(),
-            'active' => Project::where('status', 'Active')->count(),
-            'completed' => Project::where('status', 'Completed')->count(),
+            'total' => (clone $statsBaseQuery)->count(),
+            'active' => (clone $statsBaseQuery)->where('status', 'Active')->count(),
+            'completed' => (clone $statsBaseQuery)->where('status', 'Completed')->count(),
             'revenue' => $defaultCurrency . number_format($totalRevenueINR, 0),
         ];
 
@@ -405,8 +425,13 @@ class ProjectController extends Controller
      */
     public function show($id)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403, 'Unauthorized action.');
+        $user = auth()->user();
+        $projectModel = Project::findOrFail($id);
+
+        if (!$user->isAdmin() && !$user->isManager()) {
+            if (!$projectModel->assignees->contains('id', $user->id)) {
+                abort(403, 'Unauthorized action.');
+            }
         }
 
         $project = Project::withSum('projectAmounts as calculated_base_amount', 'project_amount')

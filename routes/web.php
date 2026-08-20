@@ -77,8 +77,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/activities/{activity}/attachment', [\App\Http\Controllers\CrmProjectController::class, 'activityAttachmentShow'])->name('api.activities.attachment.show');
     Route::get('/api/enhancements/{enhancement}/attachment', [\App\Http\Controllers\CrmProjectController::class, 'enhancementAttachmentShow'])->name('api.enhancements.attachment.show');
 
-    // Project Management - Admin, Manager, and Project Manager
-    Route::middleware('role:Admin|Manager|project-manager')->group(function () {
+    // Project Management - Admin and Manager
+    Route::middleware('role:Admin|Manager')->group(function () {
         Route::get('/projects/settings', [\App\Http\Controllers\ProjectController::class, 'settings'])->name('projects.settings');
         Route::post('/projects/settings', [\App\Http\Controllers\ProjectController::class, 'saveSettings'])->name('projects.settings.save');
         Route::get('/projects/invoices', [\App\Http\Controllers\ProjectController::class, 'invoices'])->name('projects.invoices');
