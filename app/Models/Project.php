@@ -71,6 +71,11 @@ class Project extends Model
         return $this->hasMany(ProjectEnhancement::class, 'project_id');
     }
 
+    public function todos()
+    {
+        return $this->hasMany(ProjectTodo::class, 'project_id')->orderBy('created_at', 'desc');
+    }
+
     public function messages()
     {
         return $this->hasMany(ProjectMessage::class, 'project_id');

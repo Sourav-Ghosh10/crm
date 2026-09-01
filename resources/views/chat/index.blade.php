@@ -1088,17 +1088,8 @@
                 },
 
                 showBrowserNotification(msg) {
-                    if (document.hasFocus()) return; // Only notify if window is in background
-                    if (Notification.permission !== 'granted') return;
-                    const senderName = msg.user?.name || 'Someone';
-                    const body = msg.attachment_filename
-                        ? `📎 ${msg.attachment_filename}`
-                        : (msg.message || '');
-                    new Notification(`${senderName} sent you a message`, {
-                        body: body,
-                        icon: '/favicon.ico',
-                        tag: `chat-room-${this.roomId}`, // Prevents duplicate notifications
-                    });
+                    // Browser notification logic removed as it is now handled centrally by FCM
+                    // in firebase-init.blade.php and the service worker.
                 },
 
                 initAudioContext() {
@@ -1193,16 +1184,8 @@
                             axios.post('/fcm/token', { token }).catch(() => { });
                         }
 
-                        // Handle foreground messages
-                        onMessage(messaging, (payload) => {
-                            console.log('[FCM] Foreground message:', payload);
-                            if (Notification.permission === 'granted' && document.hidden) {
-                                new Notification(payload.notification?.title || 'New Message', {
-                                    body: payload.notification?.body,
-                                    icon: '/favicon.ico'
-                                });
-                            }
-                        });
+                        // Foreground messages are handled globally in firebase-init.blade.php
+                        // No need for a duplicate listener here.
                     } catch (err) {
                         console.warn('[FCM] Push init failed:', err.message);
                     }

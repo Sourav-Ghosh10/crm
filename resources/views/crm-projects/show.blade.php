@@ -678,6 +678,102 @@
                             @endif
                         </div>
                     </div>
+
+                    <!-- To-Do List Card -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 shrink-0"
+                        x-data="{ open: false }">
+                        <button @click="open = !open" type="button"
+                            class="w-full flex items-center justify-between focus:outline-none group"
+                            :class="{'mb-4': open}">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">To-Do List</h3>
+                                <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-white transition-transform duration-200"
+                                    :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600">
+                                ACTIVITY
+                            </span>
+                        </button>
+
+                        <div x-show="open" x-transition.opacity.duration.200ms>
+                            <!-- Add To-Do Form -->
+                            <form action="{{ route('crm-projects.todos.store', $project->id) }}" method="POST"
+                                class="mb-6">
+                                @csrf
+                                <div class="mb-3">
+                                    <div class="relative flex items-center bg-slate-900/50 dark:bg-slate-900/70 border border-slate-700/80 focus-within:border-indigo-500 rounded-lg overflow-hidden transition-colors">
+                                        <textarea name="description" autocomplete="off" rows="1"
+                                            style="background-color: transparent !important; color: #e2e8f0 !important; border: 0 !important; box-shadow: none !important; resize: none; max-height: 140px; min-height: 44px; outline: none !important;"
+                                            class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-400 focus:ring-0 text-sm py-3 px-3 focus:outline-none"
+                                            placeholder="What needs to be done?" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <select name="duration_type"
+                                            class="block rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm transition-colors">
+                                            <option value="days">Days</option>
+                                            <option value="weeks">Weeks</option>
+                                            <option value="months">Months</option>
+                                        </select>
+                                        <input type="hidden" name="duration_value" value="1">
+                                    </div>
+                                    <button type="submit"
+                                        class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                        Add To-Do
+                                    </button>
+                                </div>
+                            </form>
+
+                            @php $todosCollection = $todos ?? $project->todos; @endphp
+
+                            @if($todosCollection->count() > 0)
+                                <div class="space-y-4 border-t border-gray-100 dark:border-slate-700/60 pt-4">
+                                    @foreach($todosCollection as $todo)
+                                        <div
+                                            class="py-3 border-b border-gray-100 dark:border-slate-700/60 last:border-0 text-left">
+                                            <p class="text-sm text-gray-900 dark:text-white mb-1">{{ $todo->description }}</p>
+                                            <div
+                                                class="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-2 bg-indigo-50 dark:bg-indigo-900/30 w-max px-2 py-0.5 rounded">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                {{ $todo->duration_value }} {{ ucfirst($todo->duration_type) }}
+                                            </div>
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-xs text-gray-500 dark:text-gray-400"
+                                                    x-data="{ date: new Date('{{ $todo->created_at->toISOString() }}') }"
+                                                    x-text="date.toLocaleString('en-US')">{{ $todo->created_at->format('n/j/Y, g:i:s A') }}</span>
+                                                <div class="flex items-center gap-1.5">
+                                                    <div
+                                                        class="w-4 h-4 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-[8px] font-bold">
+                                                        {{ collect(explode(' ', optional($todo->user)->name ?? 'U'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('') }}
+                                                    </div>
+                                                    <span
+                                                        class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ optional($todo->user)->name }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div
+                                    class="flex flex-col items-center justify-center w-full min-h-[6rem] px-4 py-4 border border-dashed rounded-xl bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 transition-colors">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium text-center">No
+                                        to-do items added yet.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div> <!-- End of Sticky Wrapper -->
             </div>
         </div>

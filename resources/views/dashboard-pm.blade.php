@@ -200,7 +200,7 @@
                                     default => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
                                 };
                             @endphp
-                            <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <tr data-project-id="{{ $proj['id'] }}" class="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
                                 <td class="px-6 py-4">
                                     <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ $proj['project_name'] }}</span>
                                 </td>

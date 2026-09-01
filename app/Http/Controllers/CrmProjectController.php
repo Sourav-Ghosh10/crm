@@ -118,7 +118,12 @@ class CrmProjectController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('crm-projects.show', compact('project', 'dailyUpdates', 'enhancements', 'activities'));
+        $todos = \App\Models\ProjectTodo::with('user')
+            ->where('project_id', $projectId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('crm-projects.show', compact('project', 'dailyUpdates', 'enhancements', 'activities', 'todos'));
     }
 
     public function edit($projectId)
@@ -131,6 +136,9 @@ class CrmProjectController extends Controller
                 $q->orderBy('created_at', 'desc');
             },
             'enhancements' => function ($q) {
+                $q->orderBy('created_at', 'desc');
+            },
+            'todos' => function ($q) {
                 $q->orderBy('created_at', 'desc');
             }
         ])->findOrFail($projectId);
@@ -209,6 +217,14 @@ class CrmProjectController extends Controller
             $isReopening = $request->input('reopen_project') === '1';
             $details->update(['status' => $isReopening ? 'Active' : 'Completed']);
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true, 
+                    'message' => $isReopening ? 'Project reopened successfully.' : 'Project marked as completed successfully.',
+                    'redirect' => route('crm-projects.show', $projectId)
+                ]);
+            }
+
             return redirect()->route('crm-projects.show', $projectId)
                 ->with('success', $isReopening ? 'Project reopened successfully.' : 'Project marked as completed successfully.');
         }
@@ -250,6 +266,7 @@ class CrmProjectController extends Controller
 
         if ($canManageAssignments) {
             $assigneeIds = array_filter($request->input('assignee_ids', []));
+            $oldAssigneeIds = $project->assignees->pluck('id')->toArray();
 
             if ($user->isAdmin() || $user->isManager()) {
                 // Admin and Manager can sync all assignments
@@ -278,6 +295,65 @@ class CrmProjectController extends Controller
                     $project->assignees()->sync($newSyncIds);
                 }
             }
+
+            // Dispatch notifications to newly assigned users
+            $newAssigneeIds = $project->fresh()->assignees->pluck('id')->toArray();
+            $newlyAssignedIds = array_diff($newAssigneeIds, $oldAssigneeIds);
+            
+            \Illuminate\Support\Facades\Log::info('--- PROJECT ASSIGNMENT TRACE START ---');
+            \Illuminate\Support\Facades\Log::info('[PASS] Save Details request reached Laravel storeOrUpdate method.');
+            \Illuminate\Support\Facades\Log::info('[PASS] Project assignment saved for Project ID: ' . $project->id . ' / ' . $project->project_name);
+            \Illuminate\Support\Facades\Log::info('Old Assignees: ' . json_encode($oldAssigneeIds));
+            \Illuminate\Support\Facades\Log::info('New Assignees: ' . json_encode($newAssigneeIds));
+            \Illuminate\Support\Facades\Log::info('Newly Assigned (Diff): ' . json_encode($newlyAssignedIds));
+
+            if (!empty($newlyAssignedIds)) {
+                \Illuminate\Support\Facades\Log::info('[PASS] Laravel detected NEW assignees.');
+                $newUsers = \App\Models\User::whereIn('id', $newlyAssignedIds)->get();
+                foreach ($newUsers as $newUser) {
+                    \Illuminate\Support\Facades\Log::info('[PASS] Laravel identified correct assigned user: ' . $newUser->name . ' (ID: ' . $newUser->id . ')');
+                    
+                    // Check FCM Token existence for logging
+                    $fcmCount = $newUser->fcmTokens()->count();
+                    if ($fcmCount > 0) {
+                        \Illuminate\Support\Facades\Log::info('[PASS] FCM token found for user ' . $newUser->id . '. Count: ' . $fcmCount);
+                    } else {
+                        \Illuminate\Support\Facades\Log::error('[FAIL] No FCM token found in database for user ' . $newUser->id);
+                    }
+
+                    // Delete previous assignment notifications for this project for this user
+                    $newUser->notifications()
+                        ->where('type', \App\Notifications\ProjectAssignmentNotification::class)
+                        ->where('data->project_id', $project->id)
+                        ->delete();
+
+                    // 1. Send bell-icon notification (database + broadcast)
+                    // The FCM logic is inside the FcmChannel, which will log Firebase API success/failure.
+                    $newUser->notify(new \App\Notifications\ProjectAssignmentNotification($project, $user));
+
+                    // 2. Broadcast a dedicated event so the assignee's browser adds the project card instantly
+                    broadcast(new \App\Events\ProjectAssignedToUserEvent(
+                        (int) $project->id,
+                        (int) $newUser->id,
+                        $project->project_name
+                    ));
+                }
+            } else {
+                \Illuminate\Support\Facades\Log::info('[FAIL] No NEW assignees detected. Notification will NOT be sent. Did you actually change the assignees before clicking Save Details?');
+            }
+            \Illuminate\Support\Facades\Log::info('--- PROJECT ASSIGNMENT TRACE END ---');
+
+            // Broadcast real-time access revocation to each removed user.
+            // This fires on their own private channel (App.Models.User.{id})
+            // so their browser can redirect or remove the project card immediately.
+            $removedIds = array_diff($oldAssigneeIds, $newAssigneeIds);
+            foreach ($removedIds as $removedUserId) {
+                broadcast(new \App\Events\ProjectAssignedEvent((int) $projectId, (int) $removedUserId));
+            }
+        }
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Project details updated successfully.']);
         }
 
         return redirect()->route('crm-projects.show', $projectId)->with('success', 'Project details updated successfully.');
@@ -357,6 +433,37 @@ class CrmProjectController extends Controller
         return redirect()->back()->with('success', 'Enhancement added successfully.');
     }
 
+    public function storeTodo(Request $request, $projectId)
+    {
+        $user = auth()->user();
+        $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
+
+        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+        $isAssigned = $project->assignees->contains('id', $user->id);
+
+        // All assigned users can add to-dos
+        if (!$hasGlobalAccess && !$isAssigned) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $request->validate([
+            'description' => 'required|string|max:65535',
+            'duration_value' => 'required|integer|min:1',
+            'duration_type' => 'required|string|in:days,weeks,months',
+        ]);
+
+        \App\Models\ProjectTodo::create([
+            'project_id' => $projectId,
+            'user_id' => $user->id,
+            'description' => $request->description,
+            'duration_value' => $request->duration_value,
+            'duration_type' => $request->duration_type,
+            'status' => 'pending',
+        ]);
+
+        return redirect()->back()->with('success', 'To-Do item added successfully.');
+    }
+
     public function sendMessage(Request $request, $projectId)
     {
         $user = auth()->user();
@@ -396,9 +503,9 @@ class CrmProjectController extends Controller
         $user = auth()->user();
         $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
 
-        // Authorization: Admin, Manager, Project Manager, and Team Lead can view/post updates.
-        // Other roles can view/post updates ONLY if they are assigned to this project.
-        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('team-lead');
+        // Authorization: Admin, Manager, and Project Manager have global access.
+        // Team Lead and all other roles can view/post updates ONLY if they are assigned to this project.
+        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
         $isAssigned = $project->assignees->contains('id', $user->id);
 
         if (!$hasGlobalAccess && !$isAssigned) {
@@ -419,7 +526,7 @@ class CrmProjectController extends Controller
         $user = auth()->user();
         $project = \App\Models\Project::with('assignees')->findOrFail($projectId);
 
-        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('team-lead');
+        $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
         $isAssigned = $project->assignees->contains('id', $user->id);
 
         if (!$hasGlobalAccess && !$isAssigned) {

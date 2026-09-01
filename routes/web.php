@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/crm-projects/{project}/edit', [\App\Http\Controllers\CrmProjectController::class, 'edit'])->name('crm-projects.edit');
     Route::post('/crm-projects/{project}/activities', [\App\Http\Controllers\CrmProjectController::class, 'storeActivity'])->name('crm-projects.activities.store');
     Route::post('/crm-projects/{project}/enhancements', [\App\Http\Controllers\CrmProjectController::class, 'storeEnhancement'])->name('crm-projects.enhancements.store');
+    Route::post('/crm-projects/{project}/todos', [\App\Http\Controllers\CrmProjectController::class, 'storeTodo'])->name('crm-projects.todos.store');
     Route::post('/crm-projects/{project}/messages', [\App\Http\Controllers\CrmProjectController::class, 'sendMessage'])->name('crm-projects.messages.store');
     Route::post('/crm-projects/{project}/details', [\App\Http\Controllers\CrmProjectController::class, 'storeOrUpdate'])->name('crm-projects.details.store');
 
@@ -115,6 +116,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/call-logs/{callLog}/edit', [CallLogController::class, 'edit'])->name('call-logs.edit');
     Route::patch('/call-logs/{callLog}', [CallLogController::class, 'update'])->name('call-logs.update');
     Route::delete('/call-logs/{callLog}', [CallLogController::class, 'destroy'])->name('call-logs.destroy');
+
+    // Notifications
+    Route::get('/notifications/unread', [\App\Http\Controllers\NotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::get('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+
+    // Firebase FCM Token
+    Route::post('/fcm-token', [\App\Http\Controllers\FcmTokenController::class, 'store'])->name('fcm-token.store');
 });
 
 require __DIR__ . '/auth.php';

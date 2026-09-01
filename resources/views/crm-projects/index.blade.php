@@ -39,7 +39,7 @@
             @endif
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @forelse($projects as $project)
                 @php
                     $details = $project->crmDetails;
@@ -54,7 +54,7 @@
                         $projectStatus = $isCompleted ? 'Completed' : 'Ongoing';
                     }
                 @endphp
-                <a href="{{ route('crm-projects.show', $project->id) }}" style="animation-delay: {{ $loop->index * 75 }}ms;" x-show="filter === 'All' || filter === '{{ $projectStatus }}'" x-transition.opacity.duration.300ms class="staggered-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all relative group block">
+                <a href="{{ route('crm-projects.show', $project->id) }}" data-project-id="{{ $project->id }}" style="animation-delay: {{ $loop->index * 75 }}ms;" x-show="filter === 'All' || filter === '{{ $projectStatus }}'" x-transition.opacity.duration.300ms class="staggered-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all relative group block">
                     
                     <!-- Card Header -->
                     <div class="p-5 pb-2 flex justify-between items-start">
