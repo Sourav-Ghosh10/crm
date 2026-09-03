@@ -17,22 +17,44 @@ class ChatMessageSent implements ShouldBroadcastNow
 
     public function __construct(ChatMessage $message)
     {
-        // Ensure user relation is always loaded
-        $this->message = $message->loadMissing('user');
+        // Ensure user and room relation is always loaded
+        $this->message = $message->loadMissing(['user', 'room']);
     }
 
     /**
-     * The Pusher channels to broadcast on.
+     * Get the channels the event should broadcast on.
+     *
+     * @return array<int, \Illuminate\Broadcasting\Channel>
      */
     public function broadcastOn(): array
     {
-        return [
+        $channels = [
             new PrivateChannel('chat-room.' . $this->message->chat_room_id),
         ];
+
+        // Also broadcast to each room member's individual channel
+        $memberIds = \App\Models\ChatRoomMember::where('chat_room_id', $this->message->chat_room_id)
+            ->pluck('user_id');
+
+        foreach ($memberIds as $userId) {
+            $channels[] = new PrivateChannel('App.Models.User.' . $userId);
+        }
+
+        return $channels;
     }
 
     /**
-     * Explicit payload — ensures user relation is serialized into the Pusher event.
+     * The event's broadcast name.
+     */
+    public function broadcastAs(): string
+    {
+        return 'ChatMessageSent';
+    }
+
+    /**
+     * Get the data to broadcast.
+     *
+     * @return array<string, mixed>
      */
     public function broadcastWith(): array
     {
@@ -47,19 +69,17 @@ class ChatMessageSent implements ShouldBroadcastNow
                 'attachment_mime_type' => $this->message->attachment_mime_type,
                 'created_at'           => $this->message->created_at,
                 'updated_at'           => $this->message->updated_at,
-                'user' => $this->message->user ? [
+                'user'         => $this->message->user ? [
                     'id'   => $this->message->user->id,
                     'name' => $this->message->user->name,
+                ] : null,
+                'room' => $this->message->room ? [
+                    'id'       => $this->message->room->id,
+                    'name'     => $this->message->room->name,
+                    'is_group' => $this->message->room->is_group,
                 ] : null,
             ],
         ];
     }
 
-    /**
-     * Broadcast event name — must match .listen('ChatMessageSent') on the client.
-     */
-    public function broadcastAs(): string
-    {
-        return 'ChatMessageSent';
-    }
 }

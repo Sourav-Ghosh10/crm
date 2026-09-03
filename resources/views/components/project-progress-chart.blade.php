@@ -205,19 +205,14 @@
             <template x-for="(label, index) in labels" :key="index">
                 <div class="flex flex-col items-center flex-1 group relative h-40 justify-end">
                     <!-- Outer Bar (Created Projects) -->
-                    <div class="w-full bg-indigo-100/80 dark:bg-indigo-900/20 rounded-t-lg transition-all duration-300 relative flex items-end group cursor-pointer hover:bg-indigo-200/50 dark:hover:bg-indigo-900/40 h-40 overflow-hidden"
+                    <div class="w-full bg-indigo-100/80 dark:bg-indigo-900/20 rounded-t-lg transition-all duration-300 relative flex items-end group cursor-pointer hover:bg-indigo-200/50 dark:hover:bg-indigo-900/40"
                         :style="`height: ${Math.max((created[index] / maxValue) * 100, 5)}%; min-height: 10px;` ">
                         
                         <!-- Hover Animation (slides up from bottom) -->
                         <div class="absolute bottom-0 left-0 right-0 bg-indigo-600 rounded-t-lg transition-all duration-300 h-0 group-hover:h-full z-20"></div>
 
-                        <!-- Completed Projects Bar (Inner Fill) -->
-                        <div class="w-full bg-indigo-600/70 dark:bg-indigo-500/30 rounded-t-lg transition-all duration-500 z-10"
-                            :style="`height: ${created[index] > 0 ? (completed[index] / created[index]) * 100 : 0}%;` ">
-                        </div>
-
                         <!-- Tooltip inside the relative outer bar -->
-                        <div class="absolute -top-20 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none bg-gray-900 dark:bg-slate-900 text-white text-[10px] rounded-lg px-3 py-2 z-30 shadow-xl border border-white/10 whitespace-nowrap scale-95 group-hover:scale-100">
+                        <div class="absolute -top-16 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none bg-gray-900 dark:bg-slate-900 text-white text-[10px] rounded-lg px-3 py-2 z-30 shadow-xl border border-white/10 whitespace-nowrap scale-95 group-hover:scale-100">
                             <div class="space-y-1">
                                 <div class="flex items-center justify-between gap-4">
                                     <span class="text-gray-400 font-medium">Created:</span>

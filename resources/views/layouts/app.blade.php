@@ -11,16 +11,20 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
 
 
     <!-- Pusher + Auth globals injected from PHP (correct for any sub-path) -->
     <script>
-        window.__PUSHER_KEY__      = "{{ config('broadcasting.connections.pusher.key') }}";
-        window.__PUSHER_CLUSTER__  = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+        window.__PUSHER_KEY__ = "{{ config('broadcasting.connections.pusher.key') }}";
+        window.__PUSHER_CLUSTER__ = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
         window.__PUSHER_AUTH_URL__ = "{{ url('/broadcasting/auth') }}";
-        window.__CSRF_TOKEN__      = "{{ csrf_token() }}";
+        window.__CSRF_TOKEN__ = "{{ csrf_token() }}";
+        @auth
+            window.__USER_ID__     = "{{ auth()->id() }}";
+        @endauth
     </script>
 
     <!-- Scripts -->
@@ -39,14 +43,17 @@
 
 <body class="font-sans antialiased text-gray-900 dark:text-white bg-gray-50 dark:bg-slate-900">
     <!-- Sidebar - Always visible on screen sizes > 640px -->
-    <aside class="crm-sidebar w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 fixed left-0 top-0 h-screen z-70 hidden sm:flex flex-col">
+    <aside
+        class="crm-sidebar w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 fixed left-0 top-0 h-screen z-70 hidden sm:flex flex-col">
         <div class="flex flex-col h-full">
             <div class="p-6 border-b border-gray-100 dark:border-slate-700">
                 <div class="flex items-center gap-3">
                     <!-- Light Mode Logo -->
-                    <img src="{{ asset('assets/img/logo.png') }}" alt="{{ config('app.name', 'CRM') }}" class="w-50 h-30 rounded-lg object-contain bg-white dark:hidden">
+                    <img src="{{ asset('assets/img/logo.png') }}" alt="{{ config('app.name', 'CRM') }}"
+                        class="w-50 h-30 rounded-lg object-contain bg-white dark:hidden">
                     <!-- Dark Mode Logo -->
-                    <img src="{{ asset('assets/img/logo_white.png') }}" alt="{{ config('app.name', 'CRM') }}" class="w-50 h-30 rounded-lg object-contain hidden dark:block">
+                    <img src="{{ asset('assets/img/logo_white.png') }}" alt="{{ config('app.name', 'CRM') }}"
+                        class="w-50 h-30 rounded-lg object-contain hidden dark:block">
                     <!-- <div class="hidden dark:block">
                         <span class="text-lg font-bold text-gray-900 dark:text-white block leading-none">
                             {{ config('app.name', 'CRM') }}
@@ -57,12 +64,16 @@
             </div>
 
             <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-                <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3">Main</div>
-                
+                <div
+                    class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3">
+                    Main</div>
+
                 <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')"
                     class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('dashboard') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                        </path>
                     </svg>
                     <span class="font-medium">Dashboard</span>
                 </x-nav-link>
@@ -71,64 +82,77 @@
                     <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z">
+                            </path>
                         </svg>
                         <span class="font-medium">Clients</span>
                     </x-nav-link>
                 @else
                     @if(Auth::user()->isAdmin())
-                    <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <span class="font-medium">Clients</span>
-                    </x-nav-link>
+                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z">
+                                </path>
+                            </svg>
+                            <span class="font-medium">Clients</span>
+                        </x-nav-link>
                     @endif
 
                     @auth
                         @if(Auth::user()->canAccessProjects())
-                        <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
-                            <button @click="open = !open" 
-                                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                                <div class="flex items-center gap-3">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                            <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
+                                <button @click="open = !open"
+                                    class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                                    <div class="flex items-center gap-3">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                        </svg>
+                                        <span class="font-medium">Projects</span>
+                                    </div>
+                                    <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                                        </path>
                                     </svg>
-                                    <span class="font-medium">Projects</span>
-                                </div>
-                                <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
+                                </button>
 
-                            <div x-show="open" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" class="mt-1 ml-4 space-y-1">
-                                <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
-                                    <span>• List Projects</span>
-                                </x-nav-link>
-                                <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
-                                    <span>• Settings</span>
-                                </x-nav-link>
-                                <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
-                                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
-                                    <span>• Invoices</span>
-                                </x-nav-link>
+                                <div x-show="open" x-transition:enter="transition ease-out duration-100"
+                                    x-transition:enter-start="transform opacity-0 scale-95"
+                                    x-transition:enter-end="transform opacity-100 scale-100" class="mt-1 ml-4 space-y-1">
+                                    <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                        <span>• List Projects</span>
+                                    </x-nav-link>
+                                    <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                        <span>• Settings</span>
+                                    </x-nav-link>
+                                    <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
+                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white' }}">
+                                        <span>• Invoices</span>
+                                    </x-nav-link>
+                                </div>
                             </div>
-                        </div>
                         @endif
                     @endauth
                 @endif
 
                 @auth
-                    <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Management</div>
+                    <div
+                        class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">
+                        Management</div>
 
                     @if(Auth::user()->isAgent())
                         <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                </path>
                             </svg>
                             <span class="font-medium">Call Logs</span>
                         </x-nav-link>
@@ -136,7 +160,9 @@
                         <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                                </path>
                             </svg>
                             <span class="font-medium">Tasks & Meetings</span>
                         </x-nav-link>
@@ -144,15 +170,21 @@
                         <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                </path>
                             </svg>
                             <span class="font-medium">Chat</span>
+                            <span
+                                class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm"
+                                style="display:none;">0</span>
                         </x-nav-link>
                     @else
                         <x-nav-link :href="route('crm-projects.index')" :active="request()->routeIs('crm-projects.*')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('crm-projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
                             </svg>
                             <span class="font-medium">Project Management</span>
                         </x-nav-link>
@@ -160,39 +192,50 @@
                         <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                </path>
                             </svg>
                             <span class="font-medium">Chat</span>
+                            <span
+                                class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm"
+                                style="display:none;">0</span>
                         </x-nav-link>
 
                         @if(Auth::user()->isAdmin())
-                        <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                            </svg>
-                            <span class="font-medium">Call Logs</span>
-                        </x-nav-link>
+                            <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                    </path>
+                                </svg>
+                                <span class="font-medium">Call Logs</span>
+                            </x-nav-link>
                         @endif
 
                         @if(Auth::user()->isAdmin())
-                        <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                            </svg>
-                            <span class="font-medium">Tasks & Meetings</span>
-                        </x-nav-link>
+                            <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                                    </path>
+                                </svg>
+                                <span class="font-medium">Tasks & Meetings</span>
+                            </x-nav-link>
                         @endif
 
                         @if(Auth::user()->isAdmin() && Auth::user()->canManageUsers())
-                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                            <span class="font-medium">Users</span>
-                        </x-nav-link>
+                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                                    </path>
+                                </svg>
+                                <span class="font-medium">Users</span>
+                            </x-nav-link>
                         @endif
                     @endif
                 @endauth
@@ -201,9 +244,12 @@
             <div class="p-4 border-t border-gray-100 dark:border-slate-700 mt-auto">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200">
+                    <button type="submit"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                            </path>
                         </svg>
                         <span class="font-medium">Logout</span>
                     </button>
@@ -215,51 +261,52 @@
     <!-- Main Content Wrapper -->
     <div x-data="{ mobileMenuOpen: false }" class="min-h-screen">
         <!-- Mobile Sidebar Overlay -->
-        <div id="mobile-sidebar" 
-             class="fixed inset-0 z-50 sm:hidden" 
-             x-show="mobileMenuOpen" 
-             x-transition:enter="transition ease-out duration-300" 
-             x-transition:enter-start="opacity-0" 
-             x-transition:enter-end="opacity-100" 
-             x-transition:leave="transition ease-in duration-300" 
-             x-transition:leave-start="opacity-100" 
-             x-transition:leave-end="opacity-0" 
-             style="display: none;">
-            
+        <div id="mobile-sidebar" class="fixed inset-0 z-50 sm:hidden" x-show="mobileMenuOpen"
+            x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-300"
+            x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" style="display: none;">
+
             <!-- Backdrop -->
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="mobileMenuOpen = false"></div>
-            
+
             <!-- Sidebar Panel -->
             <div class="fixed inset-y-0 left-0 w-72 bg-white dark:bg-slate-800 shadow-2xl flex flex-col transition-transform duration-300"
-                 x-transition:enter="translate-x-0"
-                 x-transition:enter-start="-translate-x-full"
-                 x-transition:enter-end="translate-x-0"
-                 x-transition:leave="translate-x-0"
-                 x-transition:leave-start="translate-x-0"
-                 x-transition:leave-end="-translate-x-full">
-                
-                <div class="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800">
+                x-transition:enter="translate-x-0" x-transition:enter-start="-translate-x-full"
+                x-transition:enter-end="translate-x-0" x-transition:leave="translate-x-0"
+                x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
+
+                <div
+                    class="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800">
                     <div class="flex items-center gap-3">
                         <!-- Light Mode Logo (Mobile) -->
-                        <img src="{{ asset('assets/img/logo.png') }}" alt="{{ config('app.name', 'CRM') }}" class="w-10 h-10 rounded-lg object-contain bg-white dark:hidden">
+                        <img src="{{ asset('assets/img/logo.png') }}" alt="{{ config('app.name', 'CRM') }}"
+                            class="w-10 h-10 rounded-lg object-contain bg-white dark:hidden">
                         <!-- Dark Mode Logo (Mobile) -->
-                        <img src="{{ asset('assets/img/logo_white.png') }}" alt="{{ config('app.name', 'CRM') }}" class="w-10 h-10 rounded-lg object-contain hidden dark:block">
-                        <span class="text-lg font-bold text-gray-900 dark:text-white">{{ config('app.name', 'CRM') }}</span>
+                        <img src="{{ asset('assets/img/logo_white.png') }}" alt="{{ config('app.name', 'CRM') }}"
+                            class="w-10 h-10 rounded-lg object-contain hidden dark:block">
+                        <span
+                            class="text-lg font-bold text-gray-900 dark:text-white">{{ config('app.name', 'CRM') }}</span>
                     </div>
-                    <button @click="mobileMenuOpen = false" class="p-2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white">
+                    <button @click="mobileMenuOpen = false"
+                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
 
                 <nav class="flex-1 p-4 space-y-1 overflow-y-auto bg-white dark:bg-slate-800">
-                    <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3">Main</div>
-                    
+                    <div
+                        class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3">
+                        Main</div>
+
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')"
                         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('dashboard') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                            </path>
                         </svg>
                         <span class="font-medium">Dashboard</span>
                     </x-nav-link>
@@ -268,64 +315,78 @@
                         <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
                             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z">
+                                </path>
                             </svg>
                             <span class="font-medium">Clients</span>
                         </x-nav-link>
                     @else
                         @if(Auth::user()->isAdmin())
-                        <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
-                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span class="font-medium">Clients</span>
-                        </x-nav-link>
+                            <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('clients.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z">
+                                    </path>
+                                </svg>
+                                <span class="font-medium">Clients</span>
+                            </x-nav-link>
                         @endif
 
                         @auth
                             @if(Auth::user()->canAccessProjects())
-                            <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
-                                <button @click="open = !open" 
-                                    class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                                    <div class="flex items-center gap-3">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                <div x-data="{ open: {{ request()->routeIs('projects.*') ? 'true' : 'false' }} }">
+                                    <button @click="open = !open"
+                                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl {{ request()->routeIs('projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                        <div class="flex items-center gap-3">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z">
+                                                </path>
+                                            </svg>
+                                            <span class="font-medium">Projects</span>
+                                        </div>
+                                        <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
                                         </svg>
-                                        <span class="font-medium">Projects</span>
-                                    </div>
-                                    <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </button>
+                                    </button>
 
-                                <div x-show="open" class="mt-1 ml-4 space-y-1">
-                                    <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
-                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
-                                        <span>• List Projects</span>
-                                    </x-nav-link>
-                                    <x-nav-link :href="route('projects.settings')" :active="request()->routeIs('projects.settings')"
-                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
-                                        <span>• Settings</span>
-                                    </x-nav-link>
-                                    <x-nav-link :href="route('projects.invoices')" :active="request()->routeIs('projects.invoices')"
-                                        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
-                                        <span>• Invoices</span>
-                                    </x-nav-link>
+                                    <div x-show="open" class="mt-1 ml-4 space-y-1">
+                                        <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.index')"
+                                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.index') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
+                                            <span>• List Projects</span>
+                                        </x-nav-link>
+                                        <x-nav-link :href="route('projects.settings')"
+                                            :active="request()->routeIs('projects.settings')"
+                                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.settings') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
+                                            <span>• Settings</span>
+                                        </x-nav-link>
+                                        <x-nav-link :href="route('projects.invoices')"
+                                            :active="request()->routeIs('projects.invoices')"
+                                            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('projects.invoices') ? 'text-indigo-600 font-semibold' : 'text-gray-500 dark:text-slate-400' }}">
+                                            <span>• Invoices</span>
+                                        </x-nav-link>
+                                    </div>
                                 </div>
-                            </div>
                             @endif
                         @endauth
                     @endif
 
                     @auth
-                        <div class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Management</div>
+                        <div
+                            class="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">
+                            Management</div>
 
                         @if(Auth::user()->isAgent())
                             <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                    </path>
                                 </svg>
                                 <span class="font-medium">Call Logs</span>
                             </x-nav-link>
@@ -333,7 +394,9 @@
                             <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                                    </path>
                                 </svg>
                                 <span class="font-medium">Tasks & Meetings</span>
                             </x-nav-link>
@@ -341,15 +404,21 @@
                             <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                    </path>
                                 </svg>
                                 <span class="font-medium">Chat</span>
+                                <span
+                                    class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm"
+                                    style="display:none;">0</span>
                             </x-nav-link>
                         @else
                             <x-nav-link :href="route('crm-projects.index')" :active="request()->routeIs('crm-projects.*')"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('crm-projects.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"></path>
                                 </svg>
                                 <span class="font-medium">Project Management</span>
                             </x-nav-link>
@@ -357,39 +426,50 @@
                             <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('chat.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                    </path>
                                 </svg>
                                 <span class="font-medium">Chat</span>
+                                <span
+                                    class="chat-unread-badge bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm"
+                                    style="display:none;">0</span>
                             </x-nav-link>
 
                             @if(Auth::user()->isAdmin())
-                            <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                </svg>
-                                <span class="font-medium">Call Logs</span>
-                            </x-nav-link>
+                                <x-nav-link :href="route('call-logs.index')" :active="request()->routeIs('call-logs.*')"
+                                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('call-logs.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z">
+                                        </path>
+                                    </svg>
+                                    <span class="font-medium">Call Logs</span>
+                                </x-nav-link>
                             @endif
 
                             @if(Auth::user()->isAdmin())
-                            <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                                </svg>
-                                <span class="font-medium">Tasks & Meetings</span>
-                            </x-nav-link>
+                                <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
+                                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                                        </path>
+                                    </svg>
+                                    <span class="font-medium">Tasks & Meetings</span>
+                                </x-nav-link>
                             @endif
 
                             @if(Auth::user()->isAdmin() && Auth::user()->canManageUsers())
-                            <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                </svg>
-                                <span class="font-medium">Users</span>
-                            </x-nav-link>
+                                <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')"
+                                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('users.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                                        </path>
+                                    </svg>
+                                    <span class="font-medium">Users</span>
+                                </x-nav-link>
                             @endif
                         @endif
                     @endauth
@@ -398,9 +478,12 @@
                 <div class="p-4 border-t border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10">
+                        <button type="submit"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                                </path>
                             </svg>
                             <span class="font-medium">Logout</span>
                         </button>
@@ -411,56 +494,63 @@
 
         <div class="sm:ml-64 min-h-screen flex flex-col relative">
             <!-- Mobile Header with Hamburger -->
-            <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 fixed top-0 left-0 right-0 z-50 sm:hidden h-16">
+            <header
+                class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 fixed top-0 left-0 right-0 z-50 sm:hidden h-16">
                 <div class="flex items-center px-4 py-3">
                     <button @click="mobileMenuOpen = true" class="p-2 text-gray-500 dark:text-slate-400">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
-                    <span class="ml-3 text-lg font-bold text-gray-900 dark:text-white">{{ config('app.name', 'CRM') }}</span>
+                    <span
+                        class="ml-3 text-lg font-bold text-gray-900 dark:text-white">{{ config('app.name', 'CRM') }}</span>
                 </div>
             </header>
 
             <!-- Desktop Header - Hidden on mobile -->
-            <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 fixed top-0 left-0 w-full z-40 sm:block h-16">
-            <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 sm:pl-72 py-3">
-                <div></div>
-                
-                <div class="flex items-center gap-2 sm:gap-4">
-                    <div class="relative hidden sm:block">
-                        <input type="text" placeholder="Search..." class="w-48 lg:w-64 pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500">
-                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </div>
+            <header
+                class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 fixed top-0 left-0 w-full z-40 sm:block h-16">
+                <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 sm:pl-72 py-3">
+                    <div></div>
 
-                    <div class="relative" x-data="{ open: false }">
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <div class="relative hidden sm:block">
+                            <input type="text" placeholder="Search..."
+                                class="w-48 lg:w-64 pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-700 border-0 rounded-xl text-sm text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500">
+                            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Unified Notifications Dropdown -->
                         @php
                             $user = auth()->user();
                             // Query projects with end_date
                             $notificationProjectsQuery = \App\Models\Project::with(['crmDetails', 'assignees'])
-                                ->whereHas('crmDetails', function($q) {
+                                ->whereHas('crmDetails', function ($q) {
                                     $q->whereNotNull('end_date')->where('status', '!=', 'Completed');
                                 });
-                            
+
                             // If not admin/manager/project-manager, filter by assignee
                             if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('project-manager')) {
-                                $notificationProjectsQuery->whereHas('assignees', function($q) use ($user) {
+                                $notificationProjectsQuery->whereHas('assignees', function ($q) use ($user) {
                                     $q->where('users.id', $user->id);
                                 });
                             }
-                            
+
                             $allNotificationProjects = $notificationProjectsQuery->get();
-                            
+
                             // Filter in memory for projects ending within 3 days or overdue
                             $incomingNotifications = [];
-                            foreach($allNotificationProjects as $p) {
+                            foreach ($allNotificationProjects as $p) {
                                 if ($p->crmDetails && $p->crmDetails->end_date) {
                                     $endDate = \Carbon\Carbon::parse($p->crmDetails->end_date)->startOfDay();
                                     $today = \Carbon\Carbon::today();
                                     $daysLeft = $today->diffInDays($endDate, false);
-                                    
+
                                     // Ending in 3 days or overdue
                                     if ($daysLeft <= 3) {
                                         $incomingNotifications[] = [
@@ -471,153 +561,737 @@
                                     }
                                 }
                             }
-                            $unreadCount = count($incomingNotifications);
+                            $timelineCount = count($incomingNotifications);
                         @endphp
-                        
-                        <button @click="open = !open" class="relative p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                            </svg>
-                            @if($unreadCount > 0)
-                                <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                            @endif
-                        </button>
-                        
-                        <!-- Notifications Dropdown Menu -->
-                        <div x-show="open" 
-                             @click.away="open = false" 
-                             x-transition:enter="transition ease-out duration-100" 
-                             x-transition:enter-start="transform opacity-0 scale-95" 
-                             x-transition:enter-end="transform opacity-100 scale-100" 
-                             x-transition:leave="transition ease-in duration-75" 
-                             x-transition:leave-start="transform opacity-100 scale-100" 
-                             x-transition:leave-end="transform opacity-0 scale-95" 
-                             class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-50 overflow-hidden" 
-                             style="display: none;">
-                            <div class="px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                                <span class="text-sm font-semibold text-gray-900 dark:text-white">Timeline Alerts</span>
-                                <span class="text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">{{ $unreadCount }} Alerts</span>
-                            </div>
-                            <div class="max-h-72 overflow-y-auto" style="scrollbar-width: thin;">
-                                @forelse($incomingNotifications as $notification)
-                                     <a href="{{ route('crm-projects.show', $notification['id']) }}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 border-b border-gray-50 dark:border-slate-700/30 last:border-b-0 transition-colors">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-xs font-semibold text-gray-900 dark:text-white leading-tight">{{ $notification['title'] }}</span>
-                                            <div class="mt-1">
-                                                @if($notification['days_left'] > 1)
-                                                    <span class="inline-flex items-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">Ends in {{ $notification['days_left'] }} days</span>
-                                                @elseif($notification['days_left'] == 1)
-                                                    <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Ends tomorrow</span>
-                                                @elseif($notification['days_left'] == 0)
-                                                    <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Ends today</span>
-                                                @else
-                                                    <span class="inline-flex items-center text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full">Overdue by {{ abs($notification['days_left']) }} {{ abs($notification['days_left']) == 1 ? 'day' : 'days' }}</span>
-                                                @endif
+
+                        <div class="relative" x-data="unifiedNotificationDropdown({{ $timelineCount }})"
+                            x-init="init()">
+                            <button @click="open = !open"
+                                class="relative p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg focus:outline-none">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                                    </path>
+                                </svg>
+                                <span x-show="totalUnreadCount > 0" x-text="totalUnreadCount"
+                                    class="absolute top-1 right-1 w-4 h-4 text-[10px] flex items-center justify-center font-bold text-white bg-indigo-600 rounded-full"
+                                    style="display: none;"></span>
+                            </button>
+
+                            <!-- Notifications Dropdown Menu -->
+                            <div x-show="open" @click.away="open = false"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="transform opacity-0 scale-95"
+                                x-transition:enter-end="transform opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="transform opacity-100 scale-100"
+                                x-transition:leave-end="transform opacity-0 scale-95"
+                                class="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 py-2 z-50 overflow-hidden"
+                                style="display: none;">
+
+                                <div
+                                    class="px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                    <span
+                                        class="text-sm font-semibold text-gray-900 dark:text-white">Notifications</span>
+                                    <button @click="markAllAsRead" x-show="unreadCount > 0"
+                                        class="text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-800/50">Mark
+                                        all read</button>
+                                </div>
+
+                                <div class="max-h-72 overflow-y-auto" style="scrollbar-width: thin;">
+                                    <!-- System Alerts (DB Notifications) -->
+                                    <template x-if="notifications.length > 0">
+                                        <div
+                                            class="px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                                            Project Assignments</div>
+                                    </template>
+                                    <template x-for="notification in notifications" :key="notification.id">
+                                        <a :href="`{{ url('notifications') }}/${notification.id}/read`"
+                                            class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 border-b border-gray-50 dark:border-slate-700/30 last:border-b-0 transition-colors"
+                                            :class="{'bg-indigo-50/50 dark:bg-indigo-900/10': !notification.read_at}">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0 pt-0.5">
+                                                    <span
+                                                        class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z">
+                                                            </path>
+                                                        </svg>
+                                                    </span>
+                                                </div>
+                                                <div class="ml-3 w-0 flex-1">
+                                                    <p class="text-sm font-semibold text-gray-900 dark:text-white"
+                                                        x-text="notification.data.title"></p>
+                                                    <p class="text-xs text-gray-500 dark:text-slate-400 mt-1"
+                                                        x-text="notification.data.message"></p>
+                                                    <p class="text-[10px] text-gray-400 dark:text-slate-500 mt-1"
+                                                        x-text="`Assigned by ${notification.data.assigned_by_name} • ${formatTime(notification.created_at)}`">
+                                                    </p>
+                                                </div>
+                                                <div class="ml-2 flex-shrink-0 flex" x-show="!notification.read_at">
+                                                    <span
+                                                        class="inline-block h-2 w-2 rounded-full bg-indigo-600"></span>
+                                                </div>
                                             </div>
+                                        </a>
+                                    </template>
+
+                                    <!-- Timeline Alerts -->
+                                    @if($timelineCount > 0)
+                                        <div class="px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider border-y border-gray-100 dark:border-slate-700"
+                                            x-show="notifications.length > 0">Timeline Alerts</div>
+                                        <div class="px-4 py-2 bg-gray-50 dark:bg-slate-700/50 text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider"
+                                            x-show="notifications.length === 0">Timeline Alerts</div>
+                                        @foreach($incomingNotifications as $notification)
+                                            <a href="{{ route('crm-projects.show', $notification['id']) }}"
+                                                class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 border-b border-gray-50 dark:border-slate-700/30 last:border-b-0 transition-colors">
+                                                <div class="flex flex-col gap-1">
+                                                    <span
+                                                        class="text-xs font-semibold text-gray-900 dark:text-white leading-tight">{{ $notification['title'] }}</span>
+                                                    <div class="mt-1">
+                                                        @if($notification['days_left'] > 1)
+                                                            <span
+                                                                class="inline-flex items-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">Ends
+                                                                in {{ $notification['days_left'] }} days</span>
+                                                        @elseif($notification['days_left'] == 1)
+                                                            <span
+                                                                class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Ends
+                                                                tomorrow</span>
+                                                        @elseif($notification['days_left'] == 0)
+                                                            <span
+                                                                class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">Ends
+                                                                today</span>
+                                                        @else
+                                                            <span
+                                                                class="inline-flex items-center text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-0.5 rounded-full">Overdue
+                                                                by {{ abs($notification['days_left']) }}
+                                                                {{ abs($notification['days_left']) == 1 ? 'day' : 'days' }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        @endforeach
+                                    @endif
+
+                                    <!-- Empty State -->
+                                    <template x-if="notifications.length === 0 && {{ $timelineCount }} === 0">
+                                        <div
+                                            class="py-8 px-4 text-center text-xs text-gray-500 dark:text-gray-400 flex flex-col items-center justify-center gap-2">
+                                            <svg class="w-8 h-8 text-gray-300 dark:text-slate-600" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                                                </path>
+                                            </svg>
+                                            <span>No notifications</span>
                                         </div>
-                                    </a>
-                                @empty
-                                    <div class="py-8 px-4 text-center text-xs text-gray-500 dark:text-gray-400 flex flex-col items-center justify-center gap-2">
-                                        <svg class="w-8 h-8 text-gray-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        <span>No urgent timeline alerts.</span>
-                                    </div>
-                                @endforelse
+                                    </template>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <button id="theme-toggle" class="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-                        <svg id="sun-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                        </svg>
-                        <svg id="moon-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                        </svg>
-                    </button>
+                        <script>
+                            function unifiedNotificationDropdown(timelineCount) {
+                                return {
+                                    open: false,
+                                    unreadCount: 0,
+                                    timelineCount: timelineCount,
+                                    notifications: [],
+                                    get totalUnreadCount() {
+                                        return this.unreadCount;
+                                    },
+                                    audioCtx: null,
+                                    init() {
+                                        this.initAudio();
+                                        this.fetchNotifications();
+                                        this.listenForRealTimeNotifications();
+                                    },
+                                    initAudio() {
+                                        try {
+                                            const AudioContext = window.AudioContext || window.webkitAudioContext;
+                                            this.audioCtx = new AudioContext();
+                                            const unlockAudio = () => {
+                                                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                                                    this.audioCtx.resume();
+                                                }
+                                                document.removeEventListener('click', unlockAudio);
+                                                document.removeEventListener('touchstart', unlockAudio);
+                                                document.removeEventListener('keydown', unlockAudio);
+                                            };
+                                            document.addEventListener('click', unlockAudio);
+                                            document.addEventListener('touchstart', unlockAudio);
+                                            document.addEventListener('keydown', unlockAudio);
+                                        } catch (e) {
+                                            console.warn('[Audio] Web Audio API not supported', e);
+                                        }
+                                    },
+                                    fetchNotifications() {
+                                        fetch("{{ route('notifications.unread') }}")
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                this.unreadCount = data.unread_count;
+                                                // Ensure uniqueness by project id (in case of legacy duplicates)
+                                                const uniqueNotifs = [];
+                                                const seenProjects = new Set();
+                                                for (let n of data.notifications) {
+                                                    if (n.data && n.data.project_id) {
+                                                        if (!seenProjects.has(n.data.project_id)) {
+                                                            seenProjects.add(n.data.project_id);
+                                                            uniqueNotifs.push(n);
+                                                        }
+                                                    } else {
+                                                        uniqueNotifs.push(n);
+                                                    }
+                                                }
+                                                this.notifications = uniqueNotifs;
+                                            });
+                                    },
+                                    listenForRealTimeNotifications() {
+                                        const attachListener = () => {
+                                            if (window.Echo && window.__USER_ID__) {
+                                                window.Echo.private(`App.Models.User.${window.__USER_ID__}`)
+                                                    .stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated')
+                                                    .notification((notification) => {
+                                                        // Only handle project assignment notifications
+                                                        if (notification.type !== 'App\\Notifications\\ProjectAssignmentNotification') {
+                                                            return;
+                                                        }
 
-                    @auth
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center gap-2 focus:outline-none">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=6366f1&color=fff&size=40" alt="" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
-                        </button>
-                        <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 py-1 z-50" style="display: none;">
-                            <div class="px-4 py-2 border-b border-gray-100 dark:border-slate-700">
-                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ Auth::user()->name }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->role }}</p>
-                            </div>
-                            <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">
-                                Profile
-                            </a>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                    Logout
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    @endauth
-                </div>
-            </div>
-        </header>
+                                                        console.log('[Echo] ProjectAssignment received:', notification);
 
-        <div class="{{ request()->routeIs('chat*') ? 'flex-1 pt-20 h-[calc(100vh-80px)] overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-15 pt-20 sm:pt-20' }}">
-            <div class="{{ request()->routeIs('chat*') ? 'h-full w-full' : 'mx-auto' }}">
-                @if(session('success'))
-                <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 
-                     class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between transition-all">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                        // toBroadcast now sends fields at the top level (no nested .data)
+                                                        const newNotif = {
+                                                            id: notification.id || Date.now(),
+                                                            data: {
+                                                                project_id: notification.project_id,
+                                                                project_name: notification.project_name,
+                                                                assigned_by_id: notification.assigned_by_id,
+                                                                assigned_by_name: notification.assigned_by_name,
+                                                                title: notification.title || 'You have been assigned to a project',
+                                                                message: notification.message || ('You have been assigned to the project: ' + notification.project_name),
+                                                            },
+                                                            created_at: notification.created_at || new Date().toISOString(),
+                                                            read_at: null
+                                                        };
+
+                                                        // If assignee is on the crm-projects index page, refresh the grid instantly
+                                                        const currentPath = window.location.pathname;
+                                                        if (currentPath.match(/\/crm[-_]projects\/?$/) || currentPath.includes('/clients/')) {
+                                                            fetch(window.location.href)
+                                                                .then(r => r.text())
+                                                                .then(html => {
+                                                                    const parser = new DOMParser();
+                                                                    const doc = parser.parseFromString(html, 'text/html');
+                                                                    const newGrid = doc.querySelector('#projects-grid');
+                                                                    const oldGrid = document.querySelector('#projects-grid');
+                                                                    if (newGrid && oldGrid) {
+                                                                        oldGrid.innerHTML = newGrid.innerHTML;
+                                                                        console.log('[Echo] Projects grid refreshed ✅');
+                                                                    }
+                                                                }).catch(err => {
+                                                                    console.warn('[Echo] Grid refresh failed:', err);
+                                                                });
+                                                        }
+
+                                                        // Deduplicate by project_id
+                                                        if (newNotif.data.project_id) {
+                                                            const existingIndex = this.notifications.findIndex(n => n.data && n.data.project_id === newNotif.data.project_id);
+                                                            if (existingIndex !== -1) {
+                                                                if (!this.notifications[existingIndex].read_at) {
+                                                                    this.unreadCount--;
+                                                                }
+                                                                this.notifications.splice(existingIndex, 1);
+                                                            }
+                                                        }
+
+                                                        this.unreadCount++;
+                                                        this.notifications.unshift(newNotif);
+                                                        if (this.notifications.length > 5) {
+                                                            this.notifications.pop();
+                                                        }
+
+                                                        // NOTE: Sound, Native Desktop Notification, and UI Toasts are now
+                                                        // handled centrally by FCM (firebase-init.blade.php) and the global
+                                                        // Pusher listener in navigation.blade.php. We do not trigger them here to avoid duplicates.
+                                                    })
+                                                    .stopListening('.UserAddedToGroup')
+                                                    .listen('.UserAddedToGroup', (e) => {
+                                                        // If on chat page, inject the new channel into the channel list dynamically
+                                                        const channelList = document.getElementById('channel-list-container');
+                                                        if (channelList) {
+                                                            // Check if it already exists to avoid duplicates
+                                                            if (!document.getElementById('room-link-' + e.room.id)) {
+                                                                const baseUrl = window.location.origin + window.location.pathname; // Should be /chat
+                                                                const a = document.createElement('a');
+                                                                a.href = baseUrl + '?room_id=' + e.room.id;
+                                                                a.id = 'room-link-' + e.room.id;
+                                                                a.className = 'w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 text-slate-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:text-slate-200';
+                                                                a.innerHTML = `
+                                                                    <span class="text-sm text-slate-500 font-bold">#</span>
+                                                                    <span class="truncate flex-1">${e.room.name}</span>
+                                                                    <span id="unread-badge-${e.room.id}" style="display:none;" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">0</span>
+                                                                `;
+                                                                channelList.appendChild(a);
+
+                                                                // Optional: play the notification sound
+                                                                if (typeof audio !== 'undefined') {
+                                                                    playNotificationSound();
+                                                                }
+                                                            }
+                                                        }
+                                                    })
+                                                    .stopListening('.ProjectAccessRevoked')
+                                                    .listen('.ProjectAccessRevoked', (e) => {
+                                                        // Fired when the current user has been removed from a project.
+                                                        const revokedId = parseInt(e.project_id);
+                                                        const currentPath = window.location.pathname;
+
+                                                        // If the user is actively viewing this project (show / edit / daily-updates / docs),
+                                                        // redirect them to the project list immediately.
+                                                        const projectUrlMatch = currentPath.match(/\/crm-projects\/(\d+)/);
+                                                        if (projectUrlMatch && parseInt(projectUrlMatch[1]) === revokedId) {
+                                                            window.location.href = "{{ route('crm-projects.index') }}";
+                                                            return;
+                                                        }
+
+                                                        // If the user is on the project list, fade out and remove the card.
+                                                        const card = document.querySelector(`a[data-project-id="${revokedId}"]`);
+                                                        if (card) {
+                                                            card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                                            card.style.opacity = '0';
+                                                            card.style.transform = 'scale(0.95)';
+                                                            setTimeout(() => card.remove(), 420);
+                                                        }
+
+                                                        // If the user is on the PM dashboard, fade out the project table row.
+                                                        const dashRow = document.querySelector(`tr[data-project-id="${revokedId}"]`);
+                                                        if (dashRow) {
+                                                            dashRow.style.transition = 'opacity 0.4s ease';
+                                                            dashRow.style.opacity = '0';
+                                                            setTimeout(() => dashRow.remove(), 420);
+                                                        }
+                                                    })
+                                                    .stopListening('.ProjectAssignedToUser')
+                                                    .listen('.ProjectAssignedToUser', (e) => {
+                                                        // Fired when the current user has been assigned to a project.
+                                                        const assignedProjectId = parseInt(e.project_id);
+                                                        const currentPath = window.location.pathname;
+                                                    });
+                                            } else {
+                                                setTimeout(attachListener, 100);
+                                            }
+                                        };
+                                        attachListener();
+                                    },
+                                    markAllAsRead() {
+                                        fetch("{{ route('notifications.mark-all-read') }}", {
+                                            method: 'POST',
+                                            headers: {
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                                'Accept': 'application/json'
+                                            }
+                                        }).then(() => {
+                                            this.unreadCount = 0;
+                                            this.notifications.forEach(n => n.read_at = new Date().toISOString());
+                                        });
+                                    },
+                                    playSound() {
+                                        let a = new Audio('/crm/public/assets/audio/notification.wav');
+                                        a.play().catch(err => {
+                                            console.log("Audio play failed, trying fallback beep...", err);
+                                            try {
+                                                if (!this.audioCtx) return;
+                                                if (this.audioCtx.state === 'suspended') {
+                                                    this.audioCtx.resume();
+                                                }
+                                                const osc = this.audioCtx.createOscillator();
+                                                const gain = this.audioCtx.createGain();
+                                                osc.connect(gain);
+                                                gain.connect(this.audioCtx.destination);
+                                                osc.frequency.value = 880;
+                                                gain.gain.value = 0.1;
+                                                osc.start(this.audioCtx.currentTime);
+                                                osc.stop(this.audioCtx.currentTime + 0.15);
+                                            } catch (e) {
+                                                console.warn('[Audio] Fallback beep failed', e);
+                                            }
+                                        });
+                                    },
+                                    formatTime(dateString) {
+                                        const date = new Date(dateString);
+                                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                    }
+                                }
+                            }
+                        </script>
+
+                        <button id="theme-toggle"
+                            class="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                            <svg id="sun-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+                                </path>
                             </svg>
-                        </div>
-                        <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">{{ session('success') }}</p>
+                            <svg id="moon-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                                </path>
+                            </svg>
+                        </button>
+
+                        @auth
+                            <div class="relative" x-data="{ open: false }">
+                                <button @click="open = !open" class="flex items-center gap-2 focus:outline-none">
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=6366f1&color=fff&size=40"
+                                        alt="" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
+                                </button>
+                                <div x-show="open" @click.away="open = false"
+                                    class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 py-1 z-50"
+                                    style="display: none;">
+                                    <div class="px-4 py-2 border-b border-gray-100 dark:border-slate-700">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ Auth::user()->name }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ Auth::user()->role }}</p>
+                                    </div>
+                                    <a href="{{ route('profile.edit') }}"
+                                        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700">
+                                        Profile
+                                    </a>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit"
+                                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endauth
                     </div>
-                    <button @click="show = false" class="text-emerald-400 hover:text-emerald-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
                 </div>
-                @endif
-                {{ $slot }}
+            </header>
+
+            <div
+                class="{{ request()->routeIs('chat*') ? 'flex-1 pt-20 h-[calc(100vh-80px)] overflow-hidden' : 'flex-1 p-4 sm:p-6 lg:p-15 pt-20 sm:pt-20' }}">
+                <div class="{{ request()->routeIs('chat*') ? 'h-full w-full' : 'mx-auto' }}">
+                    @if(session('success'))
+                        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+                            class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between transition-all">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                                    {{ session('success') }}
+                                </p>
+                            </div>
+                            <button @click="show = false" class="text-emerald-400 hover:text-emerald-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    @endif
+
+                    <!-- Global Notification Component -->
+                    <div x-data="{ show: false, message: '', type: 'success' }"
+                        @notify.window="show = true; message = $event.detail.message; type = $event.detail.type; setTimeout(() => show = false, 5000)"
+                        x-show="show" style="display: none;"
+                        :class="type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'"
+                        class="mb-6 p-4 border rounded-2xl flex items-center justify-between transition-all">
+                        <div class="flex items-center gap-3">
+                            <div :class="type === 'success' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'"
+                                class="w-8 h-8 rounded-full flex items-center justify-center">
+                                <svg x-show="type === 'success'" class="w-5 h-5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <svg x-show="type === 'error'" class="w-5 h-5" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            <p :class="type === 'success' ? 'text-emerald-800 dark:text-emerald-300' : 'text-red-800 dark:text-red-300'"
+                                class="text-sm font-medium" x-text="message"></p>
+                        </div>
+                        <button @click="show = false"
+                            :class="type === 'success' ? 'text-emerald-400 hover:text-emerald-600' : 'text-red-400 hover:text-red-600'"
+                            class="transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    {{ $slot }}
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const sunIcon = document.getElementById('sun-icon');
-        const moonIcon = document.getElementById('moon-icon');
+        <script>
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
 
-        function updateThemeIcons() {
-            if (document.documentElement.classList.contains('dark')) {
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-            } else {
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
+            function updateThemeIcons() {
+                if (document.documentElement.classList.contains('dark')) {
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                } else {
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                }
             }
-        }
 
-        updateThemeIcons();
-
-        themeToggleBtn.addEventListener('click', function() {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('theme', 'dark');
-            }
             updateThemeIcons();
-        });
-    </script>
 
-    @auth
-        @include('partials.firebase-init')
-    @endauth
+            themeToggleBtn.addEventListener('click', function () {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+                updateThemeIcons();
+            });
+        </script>
+
+        @auth
+            @include('partials.firebase-init')
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (window.Echo) {
+
+                        const playNotificationSound = () => {
+                            let a = new Audio("{{ asset('assets/audio/notification.wav') }}");
+                            a.play().catch(err => {
+                                console.log("Audio play failed, trying fallback beep...", err);
+                                try {
+                                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                    const osc = ctx.createOscillator();
+                                    const gain = ctx.createGain();
+                                    osc.connect(gain);
+                                    gain.connect(ctx.destination);
+                                    osc.frequency.value = 880;
+                                    gain.gain.value = 0.1;
+                                    osc.start(ctx.currentTime);
+                                    osc.stop(ctx.currentTime + 0.15);
+                                } catch (e) {
+                                    console.log("Fallback beep failed", e);
+                                }
+                            });
+                        };
+
+                        const currentUserId = {{ auth()->id() }};
+
+                        window.Echo.private(`App.Models.User.${currentUserId}`)
+                            .listen('.ChatMessageSent', (e) => {
+                                const id = e.message.chat_room_id;
+                                // Only process if message is not from the current user
+                                if (e.message && e.message.user_id !== currentUserId) {
+                                    // Play sound for EVERY new incoming message
+                                    playNotificationSound();
+
+                                    // Update unread badge and document title if not in active room
+                                    const isChatPage = window.location.pathname.includes('/chat');
+                                    const urlParams = new URLSearchParams(window.location.search);
+                                    const activeRoomId = urlParams.get('room_id');
+
+                                    if (!isChatPage || activeRoomId != id) {
+                                        // Increment unread count badges
+                                        let unreadBadges = document.querySelectorAll('.chat-unread-badge');
+                                        let currentCount = 0;
+                                        unreadBadges.forEach(badge => {
+                                            currentCount = parseInt(badge.textContent || '0');
+                                            badge.textContent = currentCount + 1;
+                                            badge.style.display = 'inline-block';
+                                        });
+
+                                        // Update browser tab title dynamically
+                                        let count = currentCount + 1;
+                                        document.title = `(${count}) New Message${count > 1 ? 's' : ''} - {{ config('app.name', 'CRM') }}`;
+
+                                        // Update specific Direct Message conversation unread badge immediately
+                                        let roomBadge = document.getElementById('unread-badge-' + id);
+                                        if (roomBadge) {
+                                            let roomCount = parseInt(roomBadge.textContent || '0');
+                                            roomBadge.textContent = roomCount + 1;
+                                            roomBadge.style.display = 'inline-block';
+                                        } else if (isChatPage && e.message.room) {
+                                            let isGroup = e.message.room.is_group;
+                                            let containerId = isGroup ? 'channel-list-container' : 'dm-list-container';
+                                            let container = document.getElementById(containerId);
+
+                                            if (container) {
+                                                let displayName = isGroup ? e.message.room.name : (e.message.user ? e.message.user.name : 'Unknown');
+                                                let initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 1).toUpperCase();
+                                                let colors = ['#3b82f6', '#a855f7', '#ec4899', '#10b981', '#f59e0b', '#f43f5e'];
+                                                let avatarColor = colors[id % colors.length];
+                                                let chatUrl = window.location.pathname + '?room_id=' + id;
+
+                                                let html = '';
+                                                if (isGroup) {
+                                                    html = `
+                                                                                        <a href="${chatUrl}" id="room-link-${id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-all duration-150 text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:hover:text-slate-200">
+                                                                                            <span class="text-sm text-slate-500 font-bold">#</span>
+                                                                                            <span class="truncate flex-1">${displayName}</span>
+                                                                                            <span id="unread-badge-${id}" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">1</span>
+                                                                                        </a>
+                                                                                    `;
+                                                } else {
+                                                    html = `
+                                                                                        <a href="${chatUrl}" id="room-link-${id}" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:hover:text-slate-200">
+                                                                                            <div style="background-color: ${avatarColor};" class="w-5 h-5 rounded flex items-center justify-center font-extrabold text-[9px] shrink-0 text-white shadow-sm">
+                                                                                                ${initials}
+                                                                                            </div>
+                                                                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                                                            <span class="truncate flex-1">${displayName}</span>
+                                                                                            <span id="unread-badge-${id}" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">1</span>
+                                                                                        </a>
+                                                                                    `;
+                                                }
+                                                container.insertAdjacentHTML('afterbegin', html);
+                                            }
+                                        }
+                                    }
+
+                                    // Show Toast (if not on chat page, or if on chat page but different room)
+                                    if (!isChatPage || activeRoomId != id) {
+                                        window.dispatchEvent(new CustomEvent('chat-message-received', {
+                                            detail: {
+                                                msg: e.message,
+                                                sender: e.message.user?.name || 'Someone'
+                                            }
+                                        }));
+                                    }
+                                }
+                            })
+                            .listen('.UserAddedToGroup', (e) => {
+                                // If on chat page, inject the new channel into the channel list dynamically
+                                const channelList = document.getElementById('channel-list-container');
+                                if (channelList) {
+                                    // Check if it already exists to avoid duplicates
+                                    if (!document.getElementById('room-link-' + e.room.id)) {
+                                        const baseUrl = window.location.origin + window.location.pathname; // Should be /chat
+                                        const a = document.createElement('a');
+                                        a.href = baseUrl + '?room_id=' + e.room.id;
+                                        a.id = 'room-link-' + e.room.id;
+                                        a.className = 'w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 text-slate-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:text-slate-200';
+                                        a.innerHTML = `
+                                                                            <span class="text-sm text-slate-500 font-bold">#</span>
+                                                                            <span class="truncate flex-1">${e.room.name}</span>
+                                                                            <span id="unread-badge-${e.room.id}" style="display:none;" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">0</span>
+                                                                        `;
+                                        channelList.appendChild(a);
+
+                                        // Optional: play the notification sound
+                                        if (typeof audio !== 'undefined') {
+                                            playNotificationSound();
+                                        }
+                                    }
+                                }
+                            })
+                            .listen('.ProjectAccessRevoked', (e) => {
+                                // Fired when the current user has been removed from a project.
+                                const revokedId = parseInt(e.project_id);
+                                const currentPath = window.location.pathname;
+
+                                // If the user is actively viewing this project (show / edit / daily-updates / docs),
+                                // redirect them to the project list immediately.
+                                const projectUrlMatch = currentPath.match(/\/crm-projects\/(\d+)/);
+                                if (projectUrlMatch && parseInt(projectUrlMatch[1]) === revokedId) {
+                                    window.location.href = "{{ route('crm-projects.index') }}";
+                                    return;
+                                }
+
+                                // If the user is on the project list, fade out and remove the card.
+                                const card = document.querySelector(`a[data-project-id="${revokedId}"]`);
+                                if (card) {
+                                    card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                    card.style.opacity = '0';
+                                    card.style.transform = 'scale(0.95)';
+                                    setTimeout(() => card.remove(), 420);
+                                }
+
+                                // If the user is on the PM dashboard, fade out the project table row.
+                                const dashRow = document.querySelector(`tr[data-project-id="${revokedId}"]`);
+                                if (dashRow) {
+                                    dashRow.style.transition = 'opacity 0.4s ease';
+                                    dashRow.style.opacity = '0';
+                                    setTimeout(() => dashRow.remove(), 420);
+                                }
+                            })
+                            .listen('.ProjectAssignedToUser', (e) => {
+                                // Fired when the current user has been assigned to a project.
+                                const assignedProjectId = parseInt(e.project_id);
+                                const currentPath = window.location.pathname;
+
+                                // Only act if user is on the crm-projects index page
+                                if (!currentPath.match(/\/crm-projects\/?$/)) {
+                                    return;
+                                }
+
+                                // Don't add duplicate card if it already exists
+                                if (document.querySelector(`a[data-project-id="${assignedProjectId}"]`)) {
+                                    return;
+                                }
+
+                                // Fetch the updated page and inject the new project card
+                                fetch(window.location.href)
+                                    .then(r => r.text())
+                                    .then(html => {
+                                        const parser = new DOMParser();
+                                        const doc = parser.parseFromString(html, 'text/html');
+                                        const newCard = doc.querySelector(`a[data-project-id="${assignedProjectId}"]`);
+                                        const grid = document.querySelector('#projects-grid');
+                                        if (newCard && grid) {
+                                            // Animate the card in
+                                            newCard.style.opacity = '0';
+                                            newCard.style.transform = 'translateY(20px)';
+                                            newCard.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                            grid.prepend(newCard);
+                                            requestAnimationFrame(() => {
+                                                requestAnimationFrame(() => {
+                                                    newCard.style.opacity = '1';
+                                                    newCard.style.transform = 'translateY(0)';
+                                                });
+                                            });
+                                            console.log('[Echo] New project card injected ✅ for project:', assignedProjectId);
+
+                                            // Play notification sound when project card is injected
+                                            const audio = document.getElementById('crm-notification-sound') || document.getElementById('notificationSound');
+                                            if (audio) {
+                                                const playPromise = audio.play();
+                                                if (playPromise !== undefined) {
+                                                    playPromise.catch(e => console.error('[Echo Error] Audio playback blocked:', e));
+                                                }
+                                            }
+                                        }
+                                    }).catch(err => {
+                                        console.warn('[Echo] Failed to fetch new project card:', err);
+                                    });
+                            });
+                    }
+                });
+            </script>
+        @endauth
+
+        <!-- Notification Sound -->
+        <audio id="notificationSound" src="{{ asset('assets/audio/notification.wav') }}" preload="auto"></audio>
 </body>
 
 </html>

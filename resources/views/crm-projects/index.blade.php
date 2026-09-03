@@ -39,7 +39,7 @@
             @endif
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @forelse($projects as $project)
                 @php
                     $details = $project->crmDetails;
@@ -54,7 +54,7 @@
                         $projectStatus = $isCompleted ? 'Completed' : 'Ongoing';
                     }
                 @endphp
-                <a href="{{ route('crm-projects.show', $project->id) }}" style="animation-delay: {{ $loop->index * 75 }}ms;" x-show="filter === 'All' || filter === '{{ $projectStatus }}'" x-transition.opacity.duration.300ms class="staggered-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all relative group block">
+                <a href="{{ route('crm-projects.show', $project->id) }}" data-project-id="{{ $project->id }}" style="animation-delay: {{ $loop->index * 75 }}ms;" x-show="filter === 'All' || filter === '{{ $projectStatus }}'" x-transition.opacity.duration.300ms class="staggered-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all relative group block">
                     
                     <!-- Card Header -->
                     <div class="p-5 pb-2 flex justify-between items-start">
@@ -129,6 +129,16 @@
                                 <span class="text-xs text-gray-400 italic">No assignees</span>
                             @endif
                         </div>
+
+                        <!-- Project Settings Gear Icon -->
+                        <button type="button" onclick="event.preventDefault(); window.location.href='{{ route('crm-projects.edit', $project->id) }}'" 
+                            class="p-2 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
+                            title="Project Settings">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
                     </div>
                 </a>
             @empty

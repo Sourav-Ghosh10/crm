@@ -1,9 +1,9 @@
 <x-app-layout>
-    <div class="w-full flex flex-col sm:flex-row bg-[#17181c] text-slate-200 overflow-hidden"
+    <div class="w-full flex flex-col sm:flex-row bg-white dark:bg-[#17181c] text-slate-900 dark:text-slate-200 overflow-hidden"
         style="height: calc(100vh - 80px) !important;" x-data="chatViewComponent()">
 
         <!-- Left Sidebar: Channels & DMs Selector -->
-        <div class="h-full flex flex-col bg-[#1f2329] border-r border-[#2f343d] shrink-0"
+        <div class="h-full flex flex-col bg-gray-50 dark:bg-[#1f2329] border-r border-gray-200 dark:border-[#2f343d] shrink-0"
             :class="showSidebar ? 'flex w-full sm:w-64' : 'hidden sm:flex sm:w-64'">
 
 
@@ -14,10 +14,10 @@
                 <!-- Section: Channels -->
                 <div>
                     <div
-                        class="flex items-center justify-between px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                        class="flex items-center justify-between px-2 py-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
                         <span>Channels</span>
                         <button type="button" @click="groupModalOpen = true"
-                            class="p-0.5 rounded hover:bg-[#2a2f37] text-slate-400 hover:text-white transition-colors animate-pulse-subtle"
+                            class="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-[#2a2f37] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors animate-pulse-subtle"
                             title="Create Channel">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -26,14 +26,14 @@
                         </button>
                     </div>
 
-                    <div class="space-y-0.5 mt-1">
+                    <div class="space-y-0.5 mt-1" id="channel-list-container">
                         @foreach($rooms->where('is_group', true) as $r)
                             @php
                                 $isSelected = $selectedRoom && $selectedRoom->id === $r->id;
                             @endphp
-                            <a href="{{ route('chat.index', ['room_id' => $r->id]) }}"
+                            <a href="{{ route('chat.index', ['room_id' => $r->id]) }}" id="room-link-{{ $r->id }}"
                                 id="room-link-{{ $r->id }}"
-                                class="flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-all duration-150 {{ $isSelected ? 'bg-[#3f4550] text-white font-semibold' : 'text-slate-400 hover:bg-[#2a2f37] hover:text-slate-200' }}">
+                                class="flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-all duration-150 {{ $isSelected ? 'bg-indigo-50 dark:bg-[#3f4550] text-indigo-700 dark:text-white font-semibold' : 'text-slate-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:text-slate-200' }}">
                                 <span class="text-sm text-slate-500 font-bold">#</span>
                                 <span class="truncate">{{ $r->display_name }}</span>
                                 
@@ -47,11 +47,11 @@
 
                 <!-- Section: Direct Messages (Active Rooms Only) -->
                 <div>
-                    <div class="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                    <div class="px-2 py-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
                         Direct Messages
                     </div>
 
-                    <div class="space-y-0.5 mt-1">
+                    <div class="space-y-0.5 mt-1" id="dm-list-container">
                         @foreach($rooms->where('is_group', false) as $r)
                             @php
                                 $isSelected = $selectedRoom && $selectedRoom->id === $r->id;
@@ -59,9 +59,9 @@
                                 $initials = collect(explode(' ', $r->display_name))->map(fn($n) => substr($n, 0, 1))->take(1)->join('');
                                 $avatarColor = $colors[$r->id % count($colors)];
                             @endphp
-                            <a href="{{ route('chat.index', ['room_id' => $r->id]) }}"
+                            <a href="{{ route('chat.index', ['room_id' => $r->id]) }}" id="room-link-{{ $r->id }}"
                                 id="room-link-{{ $r->id }}"
-                                class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 {{ $isSelected ? 'bg-[#3f4550] text-white font-semibold' : 'text-slate-400 hover:bg-[#2a2f37] hover:text-slate-200' }}">
+                                class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 {{ $isSelected ? 'bg-indigo-50 dark:bg-[#3f4550] text-indigo-700 dark:text-white font-semibold' : 'text-slate-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:text-slate-200' }}">
 
                                 <!-- Small Avatar Circle -->
                                 <div style="background-color: {{ $avatarColor }};"
@@ -92,7 +92,7 @@
         </div>
 
         <!-- Right Column: Chat Pane -->
-        <div class="flex-1 h-full flex flex-col bg-[#17181c] relative overflow-hidden"
+        <div class="flex-1 h-full flex flex-col bg-white dark:bg-[#17181c] relative overflow-hidden"
             :class="!showSidebar ? 'flex' : 'hidden sm:flex'"
             x-data="chatRoomComponent({{ $selectedRoom ? $selectedRoom->id : 'null' }}, {{ auth()->id() }}, {{ json_encode(auth()->user()->isAdmin() || auth()->user()->isManager() || auth()->user()->hasRole('project-manager')) }}, {{ json_encode($rooms->pluck('id')) }}, {{ \App\Models\ChatMessage::max('id') ?? 0 }})"
             x-init="init()"
@@ -103,7 +103,7 @@
 
             <!-- Full Screen Dropzone Overlay -->
             <div x-cloak x-show="dragOver"
-                 class="absolute inset-0 z-[9999] bg-[#17181c]/90 border-[6px] border-dashed border-indigo-500 m-4 rounded-3xl flex flex-col items-center justify-center backdrop-blur-md transition-all pointer-events-none">
+                 class="absolute inset-0 z-[9999] bg-white dark:bg-[#17181c]/90 border-[6px] border-dashed border-indigo-500 m-4 rounded-3xl flex flex-col items-center justify-center backdrop-blur-md transition-all pointer-events-none">
                  <div class="text-indigo-400 text-6xl mb-6 animate-bounce">📎</div>
                  <div class="text-indigo-100 text-3xl font-bold mb-2">Drop file to attach</div>
                  <div class="text-indigo-300 text-xl">Release anywhere in the chat</div>
@@ -136,11 +136,11 @@
 
             @if($selectedRoom)
                     <!-- Chat Header -->
-                    <div class="relative h-[56px] px-6 flex items-center bg-[#1f2329] shrink-0">
+                    <div class="relative h-[56px] px-6 flex items-center bg-gray-50 dark:bg-[#1f2329] shrink-0">
                         <div class="flex items-center gap-2 min-w-0">
                             <!-- Mobile Back Button -->
                             <button type="button" @click="showSidebar = true"
-                                class="sm:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-[#2a2f37]"
+                                class="sm:hidden p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2f37]"
                                 aria-label="Back to conversations list">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
@@ -153,7 +153,7 @@
 
                             <!-- Name & Member list -->
                             <div class="min-w-0">
-                                <h3 class="text-sm font-bold text-white truncate leading-tight flex items-center gap-1.5">
+                                <h3 class="text-sm font-bold text-slate-900 dark:text-white truncate leading-tight flex items-center gap-1.5">
                                     @if($selectedRoom->is_group)
                                         {{-- Clickable group name --}}
                                         <button type="button" id="group-name-btn"
@@ -161,7 +161,7 @@
                                             class="hover:text-indigo-300 transition-colors duration-150 flex items-center gap-1.5 group"
                                             title="View members">
                                             {{ $selectedRoom->display_name }}
-                                            <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-300 transition-colors"
+                                            <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-300 transition-colors"
                                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -169,7 +169,7 @@
                                         </button>
                                     @else
                                         {{ $selectedRoom->display_name }}
-                                        <svg class="w-3.5 h-3.5 text-slate-400 cursor-pointer" fill="none" stroke="currentColor"
+                                        <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 cursor-pointer" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.371 1.24.588 1.81l-3.97 2.883a1 1 0 00-.364 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.971-2.883a1 1 0 00-1.18 0l-3.97 2.883c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.364-1.118L2.98 9.72c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z">
@@ -184,8 +184,7 @@
                         <div class="hidden sm:block absolute left-1/2 -translate-x-1/2 w-[28rem] max-w-[45%]">
                             <button type="button"
                                 @click="searchOverlayOpen = true; $nextTick(() => $refs.overlaySearchInput.focus());"
-                                style="background-color: #334155 !important; border-color: transparent !important; color: #94a3b8 !important;"
-                                class="w-full flex items-center justify-between px-4 py-1.5 rounded-xl text-xs hover:text-white transition-colors text-left">
+                                class="w-full flex items-center justify-between px-4 py-1.5 rounded-xl text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-left">
                                 <span class="flex items-center gap-2">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -194,7 +193,7 @@
                                     <span>Search rooms</span>
                                 </span>
                                 <span
-                                    class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono select-none">(Ctrl+K)</span>
+                                    class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono select-none">(Ctrl+K)</span>
                             </button>
                         </div>
 
@@ -213,21 +212,21 @@
                             x-transition:leave-start="opacity-100 translate-x-0"
                             x-transition:leave-end="opacity-0 translate-x-full"
                             @keydown.window.escape="membersPanelOpen = false"
-                            class="absolute right-0 top-0 h-full w-72 bg-[#1f2329] border-l border-[#2f343d] z-30 flex flex-col shadow-2xl">
+                            class="absolute right-0 top-0 h-full w-72 bg-gray-50 dark:bg-[#1f2329] border-l border-gray-200 dark:border-[#2f343d] z-30 flex flex-col shadow-2xl">
 
                             <!-- Panel Header -->
-                            <div class="flex items-center justify-between px-4 py-3 border-b border-[#2f343d] shrink-0">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-[#2f343d] shrink-0">
                                 <h4 class="text-sm font-semibold text-white flex items-center gap-2">
                                     <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                     </svg>
                                     Members
-                                    <span class="text-xs text-slate-400 font-normal" x-show="groupMembers.length > 0"
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 font-normal" x-show="groupMembers.length > 0"
                                         x-text="'(' + groupMembers.length + ')'" x-cloak></span>
                                 </h4>
                                 <button type="button" @click="membersPanelOpen = false"
-                                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-[#2a2f37] transition-colors"
+                                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-[#2a2f37] transition-colors"
                                     title="Close">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -258,7 +257,7 @@
 
                                     <template x-for="member in groupMembers" :key="member.id">
                                         <div
-                                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a2f37] transition-colors duration-150 group">
+                                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-200 dark:hover:bg-[#2a2f37] transition-colors duration-150 group">
                                             <!-- Avatar -->
                                             <div :style="'background-color: ' + getMemberColor(member.id)"
                                                 class="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0 text-white shadow-sm">
@@ -266,7 +265,7 @@
                                             </div>
                                             <!-- Name + Email -->
                                             <div class="min-w-0 flex-1">
-                                                <p class="text-sm font-medium text-slate-200 truncate" x-text="member.name"></p>
+                                                <p class="text-sm font-medium text-slate-900 dark:text-slate-200 truncate" x-text="member.name"></p>
                                                 <p class="text-[10px] text-slate-500 truncate" x-text="member.email"></p>
                                             </div>
                                             <template x-if="member.id === currentUserId">
@@ -306,11 +305,11 @@
                                 </div>
 
                                 <!-- ── Add Members Section ── -->
-                                <div class="border-t border-[#2f343d] shrink-0">
+                                <div class="border-t border-gray-200 dark:border-[#2f343d] shrink-0">
                                     <!-- Toggle button -->
                                     <button type="button" x-show="currentUserCanRemove"
                                         @click="addMemberSectionOpen = !addMemberSectionOpen; if(addMemberSectionOpen) { $nextTick(() => $refs.addMemberSearch?.focus()); }"
-                                        class="w-full flex items-center gap-2 px-4 py-3 text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:bg-[#2a2f37] transition-colors">
+                                        class="w-full flex items-center gap-2 px-4 py-3 text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:bg-gray-200 dark:hover:bg-[#2a2f37] transition-colors">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M12 4v16m8-8H4" />
@@ -347,15 +346,15 @@
                                         <div class="space-y-1 overflow-y-auto custom-scrollbar" style="max-height:160px">
                                             <template x-for="u in filteredAddableUsers()" :key="u.id">
                                                 <div
-                                                    class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[#2a2f37] transition-colors group">
+                                                    class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-[#2a2f37] transition-colors group">
                                                     <div :style="'background-color:' + getMemberColor(u.id)"
                                                         class="w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-[10px] shrink-0 text-white">
                                                         <span x-text="getMemberInitials(u.name)"></span>
                                                     </div>
-                                                    <span class="text-xs text-slate-300 truncate flex-1" x-text="u.name"></span>
+                                                    <span class="text-xs text-slate-800 dark:text-slate-300 truncate flex-1" x-text="u.name"></span>
                                                     <button type="button" @click="addMemberToGroup(u)"
                                                         :disabled="memberActionLoading === u.id"
-                                                        class="w-6 h-6 flex items-center justify-center rounded-md bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white transition-all duration-150 shrink-0"
+                                                        class="w-6 h-6 flex items-center justify-center rounded-md bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-slate-900 dark:hover:text-white transition-all duration-150 shrink-0"
                                                         title="Add to group">
                                                         <svg x-show="memberActionLoading !== u.id" class="w-3 h-3" fill="none"
                                                             stroke="currentColor" viewBox="0 0 24 24">
@@ -409,14 +408,14 @@
 
                                             <!-- Message Detail -->
                                             <div class="max-w-[78%] min-w-0 px-3 py-2 shadow-sm"
-                                                :class="msg.user_id === currentUserId ? 'order-1 bg-indigo-600 text-white rounded-2xl rounded-br-md' : 'order-2 bg-[#2a2f37] text-slate-100 rounded-2xl rounded-bl-md'">
+                                                :class="msg.user_id === currentUserId ? 'order-1 bg-indigo-600 text-white rounded-2xl rounded-br-md' : 'order-2 bg-gray-200 dark:bg-[#2a2f37] text-slate-800 dark:text-slate-100 rounded-2xl rounded-bl-md'">
                                                 <div class="flex items-baseline gap-2"
                                                     :class="msg.user_id === currentUserId ? 'justify-end' : 'justify-start'">
                                                     <span class="text-xs font-bold"
-                                                        :class="msg.user_id === currentUserId ? 'text-indigo-100' : 'text-slate-100'"
+                                                        :class="msg.user_id === currentUserId ? 'text-indigo-100' : 'text-slate-800 dark:text-slate-100'"
                                                         x-text="msg.user_id === currentUserId ? 'You' : (msg.user ? msg.user.name : 'Unknown User')"></span>
                                                     <span class="text-[10px]"
-                                                        :class="msg.user_id === currentUserId ? 'text-indigo-200' : 'text-slate-400'"
+                                                        :class="msg.user_id === currentUserId ? 'text-indigo-200' : 'text-slate-500 dark:text-slate-400'"
                                                         x-text="formatTime(msg.created_at)"></span>
                                                 </div>
                                                 <div x-show="msg.message"
@@ -430,19 +429,19 @@
                                                         <!-- Render Embedded PDF Viewer IF file ends with .pdf -->
                                                         <template x-if="msg.attachment_name.toLowerCase().endsWith('.pdf')">
                                                             <div
-                                                                class="w-full min-w-[280px] max-w-md rounded-lg overflow-hidden border border-[#2f343d] bg-[#1a1d21] shadow-md my-1">
+                                                                class="w-full min-w-[280px] max-w-md rounded-lg overflow-hidden border border-gray-200 dark:border-[#2f343d] bg-[#1a1d21] shadow-md my-1">
                                                                 <iframe :src="attachmentUrl(msg.id, msg.attachment_name)"
                                                                     class="w-full h-64 border-0" type="application/pdf">
                                                                 </iframe>
                                                                 <div
-                                                                    class="p-2 flex items-center justify-between bg-[#1f2329] text-xs">
+                                                                    class="p-2 flex items-center justify-between bg-gray-50 dark:bg-[#1f2329] text-xs">
                                                                     <span
-                                                                        class="truncate text-slate-300 font-medium max-w-[180px]"
+                                                                        class="truncate text-slate-800 dark:text-slate-300 font-medium max-w-[180px]"
                                                                         x-text="msg.attachment_name"></span>
                                                                     
                                                                     <div class="flex items-center gap-2 ml-2 shrink-0">
                                                                         <a :href="downloadAttachmentUrl(msg.id)"
-                                                                            class="text-indigo-400 hover:text-indigo-300 p-1.5 rounded hover:bg-[#2a2f37] transition-colors"
+                                                                            class="text-indigo-400 hover:text-indigo-300 p-1.5 rounded hover:bg-gray-200 dark:hover:bg-[#2a2f37] transition-colors"
                                                                             title="Download"
                                                                             aria-label="Download attachment">
                                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -465,7 +464,7 @@
                                                                 <a :href="attachmentUrl(msg.id, msg.attachment_name)"
                                                                     target="_blank" rel="noopener noreferrer"
                                                                     class="inline-flex min-w-0 flex-1 items-center gap-1.5 text-xs transition-colors"
-                                                                    :class="msg.user_id === currentUserId ? 'text-indigo-100 hover:text-white' : 'text-indigo-300 hover:text-indigo-200'"
+                                                                    :class="msg.user_id === currentUserId ? 'text-indigo-100 hover:text-slate-900 dark:hover:text-white' : 'text-indigo-300 hover:text-indigo-200'"
                                                                     :title="msg.attachment_name">
                                                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor"
                                                                         viewBox="0 0 24 24" aria-hidden="true">
@@ -479,7 +478,7 @@
                                                                 
                                                                 <a :href="downloadAttachmentUrl(msg.id)"
                                                                     class="shrink-0 p-1 rounded transition-colors"
-                                                                    :class="msg.user_id === currentUserId ? 'text-indigo-200 hover:bg-indigo-500 hover:text-white' : 'text-indigo-400 hover:bg-[#1f2329] hover:text-indigo-200'"
+                                                                    :class="msg.user_id === currentUserId ? 'text-indigo-200 hover:bg-indigo-500 hover:text-slate-900 dark:hover:text-white' : 'text-indigo-400 hover:bg-gray-50 dark:bg-[#1f2329] hover:text-indigo-200'"
                                                                     title="Download"
                                                                     aria-label="Download attachment">
                                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,7 +498,7 @@
 
                         <!-- Empty Welcome message in Rocket.Chat format -->
                         <template x-if="messages.length === 0">
-                            <div class="h-full flex flex-col items-center justify-center p-8 text-center bg-[#17181c]">
+                            <div class="h-full flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#17181c]">
                                 @php
                                     $selInitials = collect(explode(' ', $selectedRoom->display_name))->map(fn($n) => substr($n, 0, 1))->take(1)->join('');
                                     $colors = ['#3b82f6', '#a855f7', '#ec4899', '#10b981', '#f59e0b', '#f43f5e'];
@@ -510,13 +509,13 @@
                                     {{ strtoupper($selInitials) }}
                                 </div>
 
-                                <h3 class="text-lg font-bold text-white mb-2">
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
                                     {{ $selectedRoom->is_group ? 'This is the start of the #' . $selectedRoom->display_name . ' channel' : 'You have joined a new direct message with' }}
                                 </h3>
 
                                 @if(!$selectedRoom->is_group)
                                     <div
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2f343d] rounded-lg text-sm text-slate-200 font-medium">
+                                        class="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2f343d] rounded-lg text-sm text-slate-900 dark:text-slate-200 font-medium">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                         <span>{{ $selectedRoom->display_name }}</span>
                                     </div>
@@ -538,14 +537,14 @@
                 </div>
 
                 <!-- Chat Input Form -->
-                <div class="p-4 bg-[#17181c] border-t border-[#2f343d] shrink-0">
+                <div class="p-4 bg-white dark:bg-[#17181c] border-t border-gray-200 dark:border-[#2f343d] shrink-0">
                     <form @submit.prevent="sendMessage">
                         <div
-                            :class="{'border-indigo-500 bg-indigo-500/10': dragOver, 'border-[#2f343d] bg-[#1d2025]': !dragOver}"
+                            :class="{'border-indigo-500 bg-indigo-500/10': dragOver, 'border-gray-200 dark:border-[#2f343d] bg-gray-100 dark:bg-[#1d2025]': !dragOver}"
                             class="relative flex items-center border focus-within:border-slate-500 rounded-lg overflow-hidden transition-colors">
                             <input type="file" x-ref="attachmentInput" @change="selectAttachment($event)" class="hidden">
                             <button type="button" @click="$refs.attachmentInput.click()"
-                                class="ml-3 shrink-0 text-slate-400 hover:text-white transition-colors"
+                                class="ml-3 shrink-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                                 :class="{'text-indigo-300': attachment}" title="Attach a file" aria-label="Attach a file">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -567,19 +566,19 @@
                             <textarea x-ref="messageInput" x-model="newMessage" rows="1"
                                 @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); sendMessage(); }"
                                 @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 150) + 'px'"
-                                style="background-color: transparent !important; color: #e2e8f0 !important; border: 0 !important; box-shadow: none !important; resize: none; max-height: 150px; min-height: 44px; outline: none !important;"
-                                class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-500 focus:ring-0 text-sm py-3 pl-3 pr-10 focus:outline-none custom-scrollbar"
+                                style="resize: none; max-height: 150px; min-height: 44px;"
+                                class="w-full min-w-0 bg-transparent border-0 text-slate-900 dark:text-slate-200 placeholder-slate-500 focus:ring-0 text-sm py-3 pl-3 pr-10 focus:outline-none custom-scrollbar"
                                 placeholder="Message {{ $selectedRoom->is_group ? '#' . $selectedRoom->display_name : '@' . $selectedRoom->display_name }}"
                                 :required="!attachment" :disabled="isSending"></textarea>
 
-                            <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                            <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center"
                                 :class="{'opacity-50 cursor-not-allowed': isSending}" :disabled="isSending">
-                                <svg x-show="!isSending" class="w-5 h-5 rotate-45 text-slate-400" fill="none"
+                                <svg x-show="!isSending" class="w-5 h-5 rotate-45 text-slate-500 dark:text-slate-400" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                 </svg>
-                                <svg x-show="isSending" style="display: none;" class="animate-spin w-5 h-5 text-slate-400"
+                                <svg x-show="isSending" style="display: none;" class="animate-spin w-5 h-5 text-slate-500 dark:text-slate-400"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
                                     </circle>
@@ -611,15 +610,14 @@
                 </div>
             @else
             <!-- Header bar for empty state -->
-            <div class="h-[56px] px-6 flex items-center justify-between bg-[#1f2329] shrink-0">
+            <div class="h-[56px] px-6 flex items-center justify-between bg-gray-50 dark:bg-[#1f2329] shrink-0">
                 <div class="flex items-center gap-2 min-w-0"></div>
 
                 <!-- Center Search Bar -->
                 <div class="hidden sm:flex flex-1 justify-center max-w-xs md:max-w-md mx-4">
                     <button type="button"
                         @click="searchOverlayOpen = true; $nextTick(() => $refs.overlaySearchInput.focus());"
-                        style="background-color: #334155 !important; border-color: transparent !important; color: #94a3b8 !important;"
-                        class="w-full flex items-center justify-between px-4 py-1.5 rounded-xl text-xs hover:text-white transition-colors text-left">
+                        class="w-full flex items-center justify-between px-4 py-1.5 rounded-xl text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-left">
                         <span class="flex items-center gap-2">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -628,12 +626,12 @@
                             <span>Search rooms</span>
                         </span>
                         <span
-                            class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-mono select-none">(Ctrl+K)</span>
+                            class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono select-none">(Ctrl+K)</span>
                     </button>
                 </div>
 
-                <div class="flex items-center gap-4 text-slate-400">
-                    <button type="button" @click="groupModalOpen = true;" class="hover:text-white transition-colors"
+                <div class="flex items-center gap-4 text-slate-500 dark:text-slate-400">
+                    <button type="button" @click="groupModalOpen = true;" class="hover:text-slate-900 dark:hover:text-white transition-colors"
                         title="Create Channel/Group">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
@@ -644,16 +642,16 @@
             </div>
 
             <!-- No Active Chat Selected Empty State -->
-            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#17181c]">
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-[#17181c]">
                 <div
-                    class="w-16 h-16 rounded-full bg-[#1f2329] flex items-center justify-center text-slate-400 mb-4 border border-[#2f343d]">
+                    class="w-16 h-16 rounded-full bg-gray-50 dark:bg-[#1f2329] flex items-center justify-center text-slate-500 dark:text-slate-400 mb-4 border border-gray-200 dark:border-[#2f343d]">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
                         </path>
                     </svg>
                 </div>
-                <h3 class="text-lg font-bold text-white">Select a Conversation</h3>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Select a Conversation</h3>
                 <p class="text-sm text-slate-500 mt-1 max-w-sm">Select an active conversation, start a direct message,
                     or create a channel/group from the left sidebar list to begin messaging.</p>
             </div>
@@ -671,7 +669,7 @@
 
             <!-- Modal Panel (Matching CRM theme) -->
             <div
-                class="inline-block align-middle bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100 dark:border-slate-700">
+                class="inline-block align-middle bg-white dark:bg-slate-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100 dark:border-gray-200 dark:border-slate-700">
                 <form action="{{ route('chat.rooms.store') }}" method="POST" class="p-6">
                     @csrf
                     <input type="hidden" name="type" value="group">
@@ -694,7 +692,7 @@
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add
                             Members</label>
-                        <div class="overflow-y-auto border border-gray-100 dark:border-slate-700 rounded-xl p-2.5 space-y-2 bg-gray-50 dark:bg-slate-900/50 custom-scrollbar"
+                        <div class="overflow-y-auto border border-gray-100 dark:border-gray-200 dark:border-slate-700 rounded-xl p-2.5 space-y-2 bg-gray-50 dark:bg-slate-900/50 custom-scrollbar"
                             style="max-height: 180px !important;">
                             @foreach($users as $u)
                                 <label
@@ -709,7 +707,7 @@
                     </div>
 
                     <!-- Actions -->
-                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-200 dark:border-slate-700">
                         <button type="button" @click="groupModalOpen = false"
                             class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                             Cancel
@@ -734,16 +732,15 @@
             @click="searchOverlayOpen = false; overlaySearchQuery = '';"></div>
 
         <!-- Modal Content Card (Matching CRM theme) -->
-        <div class="relative w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden text-gray-700 dark:text-gray-200 z-10"
+        <div class="relative w-full bg-white dark:bg-slate-800 border border-gray-100 dark:border-gray-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden text-gray-700 dark:text-gray-200 z-10"
             style="max-width: 450px !important; width: 100% !important;">
 
             <!-- Search input header -->
             <div
-                class="p-2.5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex items-center justify-between">
+                class="p-2.5 border-b border-gray-100 dark:border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex items-center justify-between">
                 <div class="relative flex-1">
                     <input type="text" x-model="overlaySearchQuery" x-ref="overlaySearchInput"
-                        style="background-color: #334155 !important; border-color: transparent !important; color: #d1d5db !important;"
-                        class="w-full pl-4 pr-10 py-1.5 text-xs rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-400 transition-colors"
+                        class="w-full pl-4 pr-10 py-1.5 text-xs rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
                         placeholder="Search rooms (Ctrl+K)">
                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                         <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -760,15 +757,15 @@
 
                 <!-- Section: Channels -->
                 <div>
-                    <div class="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                    <div class="px-3 py-1 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
                         Channels
                     </div>
-                    <div class="space-y-0.5 mt-1">
+                    <div class="space-y-0.5 mt-1" id="channel-list-container">
                         @foreach($rooms->where('is_group', true) as $r)
-                            <a href="{{ route('chat.index', ['room_id' => $r->id]) }}"
+                            <a href="{{ route('chat.index', ['room_id' => $r->id]) }}" id="room-link-{{ $r->id }}"
                                 x-show="overlaySearchQuery === '' || '{{ strtolower($r->display_name) }}'.includes(overlaySearchQuery.toLowerCase())"
                                 @click="searchOverlayOpen = false; overlaySearchQuery = '';"
-                                class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-all duration-150">
+                                class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white transition-all duration-150">
                                 <span class="text-sm font-bold text-gray-400">#</span>
                                 <span class="truncate font-medium flex-1">{{ $r->display_name }}</span>
                             </a>
@@ -794,7 +791,7 @@
                             <button type="button"
                                 @click="openOrCreateDM({{ $u->id }}, {{ $activeRoom ? $activeRoom->id : 'null' }}); searchOverlayOpen = false; overlaySearchQuery = '';"
                                 x-show="overlaySearchQuery === '' || '{{ strtolower($u->name) }}'.includes(overlaySearchQuery.toLowerCase())"
-                                class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white transition-all duration-150">
+                                class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white transition-all duration-150">
                                 <div style="background-color: {{ $avatarColor }};"
                                     class="w-5 h-5 rounded flex items-center justify-center font-extrabold text-[9px] shrink-0 text-white shadow-sm">
                                     {{ strtoupper($initials) }}
@@ -984,7 +981,7 @@
                 memberActionError: '',
 
                 init() {
-                    this.initAudioContext();
+                    
 
                     // Offline / online detection
                     window.addEventListener('offline', () => {
@@ -1053,7 +1050,7 @@
                                         this.messages.push(msg);
 
                                         if (msg.user_id !== this.currentUserId) {
-                                            this.playNotificationSound();
+                                            
                                             this.showBrowserNotification(msg);
                                         }
 
@@ -1067,7 +1064,7 @@
                                     } else {
                                         // Different room
                                         if (msg.user_id !== this.currentUserId) {
-                                            this.playNotificationSound();
+                                            
                                             this.showBrowserNotification(msg);
 
                                             const badge = document.getElementById(`unread-badge-${id}`);
@@ -1091,17 +1088,8 @@
                 },
 
                 showBrowserNotification(msg) {
-                    if (document.hasFocus()) return; // Only notify if window is in background
-                    if (Notification.permission !== 'granted') return;
-                    const senderName = msg.user?.name || 'Someone';
-                    const body = msg.attachment_filename
-                        ? `📎 ${msg.attachment_filename}`
-                        : (msg.message || '');
-                    new Notification(`${senderName} sent you a message`, {
-                        body: body,
-                        icon: '/favicon.ico',
-                        tag: `chat-room-${this.roomId}`, // Prevents duplicate notifications
-                    });
+                    // Browser notification logic removed as it is now handled centrally by FCM
+                    // in firebase-init.blade.php and the service worker.
                 },
 
                 initAudioContext() {
@@ -1196,16 +1184,8 @@
                             axios.post('/fcm/token', { token }).catch(() => { });
                         }
 
-                        // Handle foreground messages
-                        onMessage(messaging, (payload) => {
-                            console.log('[FCM] Foreground message:', payload);
-                            if (Notification.permission === 'granted' && document.hidden) {
-                                new Notification(payload.notification?.title || 'New Message', {
-                                    body: payload.notification?.body,
-                                    icon: '/favicon.ico'
-                                });
-                            }
-                        });
+                        // Foreground messages are handled globally in firebase-init.blade.php
+                        // No need for a duplicate listener here.
                     } catch (err) {
                         console.warn('[FCM] Push init failed:', err.message);
                     }

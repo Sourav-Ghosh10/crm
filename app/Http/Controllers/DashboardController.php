@@ -26,7 +26,7 @@ class DashboardController extends Controller
 
         // If Project Manager, Team Lead, UI/UX Designer, or Web Designer, show the projects-focused dashboard
         if ($isPM || $isTLOrDesigner) {
-            $restrictToAssigned = $isTLOrDesigner;
+            $restrictToAssigned = $isPM || $isTLOrDesigner;
 
             $stats = $this->getProjectDashboardStats($user, $restrictToAssigned);
             $upcomingDeadlines = $this->getUpcomingDeadlines($user, $restrictToAssigned);
@@ -376,7 +376,7 @@ class DashboardController extends Controller
         $filter = $request->query('filter', 'month');
         $date = $request->query('date');
         
-        $restrictToAssigned = $user->hasRole('team-lead') || $user->hasRole('UI-UX-desinger') || $user->hasRole('web-desinger');
+        $restrictToAssigned = $user->hasRole('project-manager') || $user->hasRole('team-lead') || $user->hasRole('UI-UX-desinger') || $user->hasRole('web-desinger');
 
         return response()->json($this->calculateProjectChartData($filter, $date, $user, $restrictToAssigned));
     }

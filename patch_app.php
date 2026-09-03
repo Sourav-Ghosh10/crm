@@ -1,0 +1,154 @@
+<?php
+$filepath = 'resources/views/layouts/app.blade.php';
+$content = file_get_contents($filepath);
+
+$pattern = '/@auth\s*@include\(\'partials\.firebase-init\'\).*$/s';
+
+$replacement = <<<EOD
+    @auth
+        @include('partials.firebase-init')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                if (window.Echo) {
+                    const audio = new Audio("{{ asset('notification.wav') }}");
+                    
+                    // Pre-load the audio context if possible on user interaction
+                    const unlockAudio = () => {
+                        audio.volume = 0; // Mute during unlock
+                        audio.play().then(() => {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            audio.volume = 1; // Restore volume
+                            document.removeEventListener('click', unlockAudio);
+                            document.removeEventListener('touchstart', unlockAudio);
+                            document.removeEventListener('keydown', unlockAudio);
+                        }).catch(() => {
+                            audio.volume = 1; // Restore volume on error
+                        });
+                    };
+                    document.addEventListener('click', unlockAudio);
+                    document.addEventListener('touchstart', unlockAudio);
+                    document.addEventListener('keydown', unlockAudio);
+
+                    const currentUserId = {{ auth()->id() }};
+                    
+                    window.Echo.private(`App.Models.User.\${currentUserId}`)
+                        .listen('.ChatMessageSent', (e) => {
+                            const id = e.message.chat_room_id;
+                            // Only process if message is not from the current user
+                            if (e.message && e.message.user_id !== currentUserId) {
+                                // Play sound for EVERY new incoming message
+                                audio.currentTime = 0;
+                                audio.play().catch(err => console.log('Audio autoplay blocked:', err));
+                                    
+                                    // Update unread badge and document title if not in active room
+                                    const isChatPage = window.location.pathname.includes('/chat');
+                                    const urlParams = new URLSearchParams(window.location.search);
+                                    const activeRoomId = urlParams.get('room_id');
+                                    
+                                    if (!isChatPage || activeRoomId != id) {
+                                        // Increment unread count badges
+                                        let unreadBadges = document.querySelectorAll('.chat-unread-badge');
+                                        let currentCount = 0;
+                                        unreadBadges.forEach(badge => {
+                                            currentCount = parseInt(badge.textContent || '0');
+                                            badge.textContent = currentCount + 1;
+                                            badge.style.display = 'inline-block';
+                                        });
+                                        
+                                        // Update browser tab title dynamically
+                                        let count = currentCount + 1;
+                                        document.title = `(\${count}) New Message\${count > 1 ? 's' : ''} - {{ config('app.name', 'CRM') }}`;
+                                        
+                                        // Update specific Direct Message conversation unread badge immediately
+                                        let roomBadge = document.getElementById('unread-badge-' + id);
+                                        if (roomBadge) {
+                                            let roomCount = parseInt(roomBadge.textContent || '0');
+                                            roomBadge.textContent = roomCount + 1;
+                                            roomBadge.style.display = 'inline-block';
+                                        } else if (isChatPage && e.message.room) {
+                                            let isGroup = e.message.room.is_group;
+                                            let containerId = isGroup ? 'channel-list-container' : 'dm-list-container';
+                                            let container = document.getElementById(containerId);
+                                            
+                                            if (container) {
+                                                let displayName = isGroup ? e.message.room.name : (e.message.user ? e.message.user.name : 'Unknown');
+                                                let initials = displayName.split(' ').map(n => n[0]).join('').substring(0, 1).toUpperCase();
+                                                let colors = ['#3b82f6', '#a855f7', '#ec4899', '#10b981', '#f59e0b', '#f43f5e'];
+                                                let avatarColor = colors[id % colors.length];
+                                                let chatUrl = window.location.pathname + '?room_id=' + id;
+                                                
+                                                let html = '';
+                                                if (isGroup) {
+                                                    html = `
+                                                        <a href="\${chatUrl}" id="room-link-\${id}" class="flex items-center gap-2 px-2.5 py-1.5 rounded text-sm transition-all duration-150 text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:hover:text-slate-200">
+                                                            <span class="text-sm text-slate-500 font-bold">#</span>
+                                                            <span class="truncate flex-1">\${displayName}</span>
+                                                            <span id="unread-badge-\${id}" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">1</span>
+                                                        </a>
+                                                    `;
+                                                } else {
+                                                    html = `
+                                                        <a href="\${chatUrl}" id="room-link-\${id}" class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:hover:text-slate-200">
+                                                            <div style="background-color: \${avatarColor};" class="w-5 h-5 rounded flex items-center justify-center font-extrabold text-[9px] shrink-0 text-white shadow-sm">
+                                                                \${initials}
+                                                            </div>
+                                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                                            <span class="truncate flex-1">\${displayName}</span>
+                                                            <span id="unread-badge-\${id}" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">1</span>
+                                                        </a>
+                                                    `;
+                                                }
+                                                container.insertAdjacentHTML('afterbegin', html);
+                                            }
+                                        }
+                                    }
+
+                                    // Show Toast (if not on chat page, or if on chat page but different room)
+                                    if (!isChatPage || activeRoomId != id) {
+                                        window.dispatchEvent(new CustomEvent('chat-message-received', {
+                                            detail: {
+                                                msg: e.message,
+                                                sender: e.message.user?.name || 'Someone'
+                                            }
+                                        }));
+                                    }
+                                }
+                            })
+                            .listen('.UserAddedToGroup', (e) => {
+                                // If on chat page, inject the new channel into the channel list dynamically
+                                const channelList = document.getElementById('channel-list-container');
+                                if (channelList) {
+                                    // Check if it already exists to avoid duplicates
+                                    if (!document.getElementById('room-link-' + e.room.id)) {
+                                        const baseUrl = window.location.origin + window.location.pathname; // Should be /chat
+                                        const a = document.createElement('a');
+                                        a.href = baseUrl + '?room_id=' + e.room.id;
+                                        a.id = 'room-link-' + e.room.id;
+                                        a.className = 'w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-left text-sm transition-all duration-150 text-slate-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2a2f37] hover:text-slate-900 dark:text-slate-200';
+                                        a.innerHTML = `
+                                            <span class="text-sm text-slate-500 font-bold">#</span>
+                                            <span class="truncate flex-1">\${e.room.name}</span>
+                                            <span id="unread-badge-\${e.room.id}" style="display:none;" class="bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto shadow-sm">0</span>
+                                        `;
+                                        channelList.appendChild(a);
+                                        
+                                        // Optional: play the notification sound
+                                        if (typeof audio !== 'undefined') {
+                                            audio.currentTime = 0;
+                                            audio.play().catch(err => console.log('Audio autoplay blocked:', err));
+                                        }
+                                    }
+                                }
+                            });
+                }
+            });
+        </script>
+    @endauth
+</body>
+</html>
+EOD;
+
+$content = preg_replace($pattern, $replacement, $content);
+file_put_contents($filepath, $content);
+echo "Successfully restored script and added UserAddedToGroup.\n";

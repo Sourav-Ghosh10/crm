@@ -294,6 +294,8 @@ class ChatController extends Controller
                 'chat_room_id' => $room->id,
                 'user_id'      => $newUserId,
             ]);
+            // Broadcast to the new user so their UI updates immediately
+            broadcast(new \App\Events\UserAddedToGroup($room, $newUserId, $user->name));
         }
 
         // Return refreshed member list

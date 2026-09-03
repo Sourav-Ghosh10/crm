@@ -97,7 +97,7 @@ class User extends Authenticatable
      */
     public function hasRole(string $role): bool
     {
-        $normalized = match($role) {
+        $normalized = match ($role) {
             'Admin', 'Administrator' => 'super-admin',
             'Manager' => 'manager',
             'Team Lead' => 'team-lead',
@@ -134,7 +134,7 @@ class User extends Authenticatable
      */
     public function canAccessProjects(): bool
     {
-        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager() || $this->hasRole('project-manager');
+        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager();
     }
 
     /**
@@ -183,6 +183,11 @@ class User extends Authenticatable
     public function chatRooms()
     {
         return $this->belongsToMany(ChatRoom::class, 'chat_room_members', 'user_id', 'chat_room_id')
-                    ->withPivot('last_read_at');
+            ->withPivot('last_read_at');
+    }
+
+    public function fcmTokens()
+    {
+        return $this->hasMany(FcmToken::class);
     }
 }
