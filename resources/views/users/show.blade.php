@@ -41,6 +41,21 @@
                     <span class="text-sm text-gray-500 dark:text-gray-400">Role</span>
                     <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $user->getRoleLabelAttribute() }}</span>
                 </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-100 dark:border-slate-700">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Development Team</span>
+                    <span>
+                        @if($user->is_development_team)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700/50">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Yes (Project Dashboard Access)
+                            </span>
+                        @else
+                            <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">No</span>
+                        @endif
+                    </span>
+                </div>
                 <div class="flex justify-between py-3 border-b border-gray-100 dark:border-slate-700">
                     <span class="text-sm text-gray-500 dark:text-gray-400">Created</span>
                     <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $user->created_at->format('M d, Y') }}</span>

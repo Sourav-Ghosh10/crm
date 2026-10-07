@@ -13,7 +13,7 @@ class TaskController extends Controller
     public function index(\Illuminate\Http\Request $request)
     {
         $user = auth()->user();
-        $isManagement = $user->isManagement();
+        $isManagement = $user->isManagement() || $user->hasRole('business-analytics');
 
         $query = Task::with(['client', 'user'])
             ->when(!$isManagement, function($q) use ($user) {
@@ -53,7 +53,7 @@ class TaskController extends Controller
     public function create()
     {
         $user = auth()->user();
-        $isManagement = $user->isManagement();
+        $isManagement = $user->isManagement() || $user->hasRole('business-analytics');
 
         $clients = \App\Models\Client::query()
             ->when(!$isManagement, function($query) use ($user) {
@@ -116,7 +116,7 @@ class TaskController extends Controller
         }
 
         $user = auth()->user();
-        $isManagement = $user->isManagement();
+        $isManagement = $user->isManagement() || $user->hasRole('business-analytics');
 
         $clients = \App\Models\Client::query()
             ->when(!$isManagement, function($query) use ($user) {

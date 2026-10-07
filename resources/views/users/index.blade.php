@@ -52,17 +52,30 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                @if($user->isAdmin())
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">Admin</span>
-                                @elseif($user->isManager())
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">Manager</span>
-                                @elseif($user->hasRole('project-manager'))
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Project Manager</span>
-                                @elseif($user->isTeamLead())
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Team Lead</span>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">{{ $user->role_label }}</span>
-                                @endif
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    @if($user->isAdmin())
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">Admin</span>
+                                    @elseif($user->isManager())
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">Manager</span>
+                                    @elseif($user->hasRole('project-manager'))
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">Project Manager</span>
+                                    @elseif($user->isTeamLead())
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Team Lead</span>
+                                    @elseif($user->hasRole('business-analytics'))
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400">Business Analytics</span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">{{ $user->role_label }}</span>
+                                    @endif
+
+                                    @if($user->is_development_team)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700/50" title="Development Team Member">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                            </svg>
+                                            Dev Team
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                                 {{ $user->created_at->format('M d, Y') }}

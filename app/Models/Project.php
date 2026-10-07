@@ -81,6 +81,11 @@ class Project extends Model
         return $this->hasMany(ProjectMessage::class, 'project_id');
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(ProjectAttachment::class, 'project_id')->orderBy('created_at', 'desc');
+    }
+
     protected static function booted()
     {
         static::creating(function ($project) {

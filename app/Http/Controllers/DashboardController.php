@@ -23,10 +23,12 @@ class DashboardController extends Controller
 
         $isPM = $user->hasRole('project-manager');
         $isTLOrDesigner = $user->hasRole('team-lead') || $user->hasRole('UI-UX-desinger') || $user->hasRole('web-desinger');
+        $isBA = $user->hasRole('business-analytics');
+        $isDevTeam = $user->isDevelopmentTeam();
 
-        // If Project Manager, Team Lead, UI/UX Designer, or Web Designer, show the projects-focused dashboard
-        if ($isPM || $isTLOrDesigner) {
-            $restrictToAssigned = $isPM || $isTLOrDesigner;
+        // If Project Manager, Team Lead, UI/UX Designer, Web Designer, Business Analytics, or Development Team member, show the projects-focused dashboard
+        if ($isPM || $isTLOrDesigner || $isBA || $isDevTeam) {
+            $restrictToAssigned = ($isPM || $isTLOrDesigner || $isDevTeam) && !$isBA && !$user->isAdmin();
 
             $stats = $this->getProjectDashboardStats($user, $restrictToAssigned);
             $upcomingDeadlines = $this->getUpcomingDeadlines($user, $restrictToAssigned);
@@ -376,7 +378,7 @@ class DashboardController extends Controller
         $filter = $request->query('filter', 'month');
         $date = $request->query('date');
         
-        $restrictToAssigned = $user->hasRole('project-manager') || $user->hasRole('team-lead') || $user->hasRole('UI-UX-desinger') || $user->hasRole('web-desinger');
+        $restrictToAssigned = ($user->hasRole('project-manager') || $user->hasRole('team-lead') || $user->hasRole('UI-UX-desinger') || $user->hasRole('web-desinger') || $user->isDevelopmentTeam()) && !$user->hasRole('business-analytics') && !$user->isAdmin();
 
         return response()->json($this->calculateProjectChartData($filter, $date, $user, $restrictToAssigned));
     }
@@ -567,7 +569,7 @@ class DashboardController extends Controller
     {
         $query = AuditTrail::with('user');
         
-        $canSeeAll = $user->isAdmin() || $user->hasRole('project-manager');
+        $canSeeAll = $user->isAdmin() || $user->hasRole('project-manager') || $user->hasRole('business-analytics');
         if (!$canSeeAll) {
             $query->where('user_id', $user->id);
         }

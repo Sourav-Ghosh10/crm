@@ -13,6 +13,8 @@
                     <span class="text-blue-600 dark:text-blue-400">(Project Manager)</span>
                 @elseif(Auth::user()->isTeamLead())
                     <span class="text-amber-600 dark:text-amber-400">(Team Lead)</span>
+                @elseif(Auth::user()->hasRole('business-analytics'))
+                    <span class="text-cyan-600 dark:text-cyan-400 font-semibold">(Business Analytics)</span>
                 @else
                     <span class="text-emerald-600 dark:text-emerald-400">({{ Auth::user()->role_label }})</span>
                 @endif

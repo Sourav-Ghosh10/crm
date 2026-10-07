@@ -56,10 +56,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/crm-projects/{project}/docs/{document}', [\App\Http\Controllers\CrmProjectController::class, 'docsShow'])->name('crm-projects.docs.show');
     Route::get('/crm-projects/{project}/edit', [\App\Http\Controllers\CrmProjectController::class, 'edit'])->name('crm-projects.edit');
     Route::post('/crm-projects/{project}/activities', [\App\Http\Controllers\CrmProjectController::class, 'storeActivity'])->name('crm-projects.activities.store');
+    Route::patch('/crm-projects/{project}/activities/{activity}', [\App\Http\Controllers\CrmProjectController::class, 'updateActivity'])->name('crm-projects.activities.update');
+    Route::delete('/crm-projects/{project}/activities/{activity}', [\App\Http\Controllers\CrmProjectController::class, 'destroyActivity'])->name('crm-projects.activities.destroy');
     Route::post('/crm-projects/{project}/enhancements', [\App\Http\Controllers\CrmProjectController::class, 'storeEnhancement'])->name('crm-projects.enhancements.store');
+    Route::patch('/crm-projects/{project}/enhancements/{enhancement}', [\App\Http\Controllers\CrmProjectController::class, 'updateEnhancement'])->name('crm-projects.enhancements.update');
+    Route::delete('/crm-projects/{project}/enhancements/{enhancement}', [\App\Http\Controllers\CrmProjectController::class, 'destroyEnhancement'])->name('crm-projects.enhancements.destroy');
+    Route::get('/crm-projects/{project}/todos', [\App\Http\Controllers\CrmProjectController::class, 'todosIndex'])->name('crm-projects.todos.index');
     Route::post('/crm-projects/{project}/todos', [\App\Http\Controllers\CrmProjectController::class, 'storeTodo'])->name('crm-projects.todos.store');
-    Route::post('/crm-projects/{project}/messages', [\App\Http\Controllers\CrmProjectController::class, 'sendMessage'])->name('crm-projects.messages.store');
+    Route::patch('/crm-projects/{project}/todos/{todo}', [\App\Http\Controllers\CrmProjectController::class, 'updateTodo'])->name('crm-projects.todos.update');
+    Route::patch('/crm-projects/{project}/todos/{todo}/toggle', [\App\Http\Controllers\CrmProjectController::class, 'toggleTodoStatus'])->name('crm-projects.todos.toggle');
+    Route::delete('/crm-projects/{project}/todos/{todo}', [\App\Http\Controllers\CrmProjectController::class, 'destroyTodo'])->name('crm-projects.todos.destroy');
     Route::post('/crm-projects/{project}/details', [\App\Http\Controllers\CrmProjectController::class, 'storeOrUpdate'])->name('crm-projects.details.store');
+    Route::post('/crm-projects/{project}/attachments', [\App\Http\Controllers\CrmProjectController::class, 'storeAttachment'])->name('crm-projects.attachments.store');
+    Route::delete('/crm-projects/attachments/{attachment}', [\App\Http\Controllers\CrmProjectController::class, 'destroyAttachment'])->name('crm-projects.attachments.destroy');
+    Route::get('/crm-projects/attachments/{attachment}/view', [\App\Http\Controllers\CrmProjectController::class, 'projectAttachmentShow'])->name('crm-projects.attachments.show');
+    Route::get('/crm-projects/attachments/{attachment}/download', [\App\Http\Controllers\CrmProjectController::class, 'projectAttachmentDownload'])->name('crm-projects.attachments.download');
 
     // General Chat Routes
     Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
@@ -78,8 +89,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/activities/{activity}/attachment', [\App\Http\Controllers\CrmProjectController::class, 'activityAttachmentShow'])->name('api.activities.attachment.show');
     Route::get('/api/enhancements/{enhancement}/attachment', [\App\Http\Controllers\CrmProjectController::class, 'enhancementAttachmentShow'])->name('api.enhancements.attachment.show');
 
-    // Project Management - Admin and Manager
-    Route::middleware('role:Admin|Manager')->group(function () {
+    // Project Management - Admin, Manager, and Business Analytics
+    Route::middleware('role:Admin|Manager|business-analytics')->group(function () {
         Route::get('/projects/settings', [\App\Http\Controllers\ProjectController::class, 'settings'])->name('projects.settings');
         Route::post('/projects/settings', [\App\Http\Controllers\ProjectController::class, 'saveSettings'])->name('projects.settings.save');
         Route::get('/projects/invoices', [\App\Http\Controllers\ProjectController::class, 'invoices'])->name('projects.invoices');
@@ -125,5 +136,9 @@ Route::middleware('auth')->group(function () {
     // Firebase FCM Token
     Route::post('/fcm-token', [\App\Http\Controllers\FcmTokenController::class, 'store'])->name('fcm-token.store');
 });
+
+// Cron Jobs - External Cron / cPanel / Webhook routes
+Route::match(['get', 'post'], '/cron/daily-todos', [\App\Http\Controllers\CronController::class, 'generateDailyTodos'])->name('cron.daily-todos');
+Route::match(['get', 'post'], '/cron/generate-daily-todos', [\App\Http\Controllers\CronController::class, 'generateDailyTodos'])->name('cron.generate-daily-todos');
 
 require __DIR__ . '/auth.php';

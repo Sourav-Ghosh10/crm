@@ -17,6 +17,8 @@
                     <span class="text-pink-600 dark:text-pink-400 font-semibold">(UI/UX Designer)</span>
                 @elseif(Auth::user()->hasRole('web-desinger'))
                     <span class="text-teal-600 dark:text-teal-400 font-semibold">(Web Designer)</span>
+                @elseif(Auth::user()->hasRole('business-analytics'))
+                    <span class="text-cyan-600 dark:text-cyan-400 font-semibold">(Business Analytics)</span>
                 @else
                     <span class="text-emerald-600 dark:text-emerald-400 font-semibold">({{ Auth::user()->role }})</span>
                 @endif

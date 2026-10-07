@@ -51,6 +51,26 @@
                     @enderror
                 </div>
 
+                <!-- Development Team Option -->
+                <div class="mb-6">
+                    <label class="flex items-start gap-3 p-4 bg-gray-50/80 dark:bg-slate-700/50 rounded-xl border border-gray-200/80 dark:border-slate-600 cursor-pointer hover:bg-gray-100/80 dark:hover:bg-slate-700 transition group">
+                        <div class="flex items-center h-5 mt-0.5">
+                            <input type="checkbox" name="is_development_team" id="is_development_team" value="1" {{ old('is_development_team', $user->is_development_team) ? 'checked' : '' }}
+                                class="w-5 h-5 text-indigo-600 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer transition">
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Development Team</span>
+                                <span class="px-2 py-0.5 text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full">Project Dashboard Access</span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Check if this user is in the development team. If checked, he/she will be able to see and access the Project Management Dashboard.</p>
+                        </div>
+                    </label>
+                    @error('is_development_team')
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Password (optional for edit) -->
                 <div class="mb-6">
                     <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

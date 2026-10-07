@@ -31,10 +31,10 @@
             <!-- Hide tabs if a specific status filter is active to keep UI clean and focused -->
             @if(!request()->get('status'))
             <div class="flex gap-1.5 bg-gray-100 dark:bg-slate-800/80 p-1.5 rounded-xl border border-gray-200 dark:border-slate-700 overflow-x-auto">
-                <button @click="filter = 'All'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'All', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'All' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap">All</button>
-                <button @click="filter = 'Not Started'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'Not Started', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'Not Started' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap">Not Started</button>
-                <button @click="filter = 'Ongoing'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'Ongoing', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'Ongoing' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap">Ongoing</button>
-                <button @click="filter = 'Completed'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'Completed', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'Completed' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap">Completed</button>
+                <button @click="filter = 'All'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'All', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'All' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap cursor-pointer">All</button>
+                <button @click="filter = 'Not Started'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'Not Started', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'Not Started' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap cursor-pointer">Not Started</button>
+                <button @click="filter = 'Ongoing'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'Ongoing', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'Ongoing' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap cursor-pointer">Ongoing</button>
+                <button @click="filter = 'Completed'" :class="{ 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-slate-600': filter === 'Completed', 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-slate-700/50': filter !== 'Completed' }" class="px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap cursor-pointer">Completed</button>
             </div>
             @endif
         </div>
@@ -44,7 +44,7 @@
                 @php
                     $details = $project->crmDetails;
                     $user = auth()->user();
-                    $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+                    $hasGlobalAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('business-analytics');
                     $isEditor = $hasGlobalAccess || $user->hasRole('team-lead');
                     $isAssigned = $project->assignees->contains('id', $user->id);
                     $isCompleted = $details && $details->status === 'Completed';
@@ -54,52 +54,59 @@
                         $projectStatus = $isCompleted ? 'Completed' : 'Ongoing';
                     }
                 @endphp
-                <a href="{{ route('crm-projects.show', $project->id) }}" data-project-id="{{ $project->id }}" style="animation-delay: {{ $loop->index * 75 }}ms;" x-show="filter === 'All' || filter === '{{ $projectStatus }}'" x-transition.opacity.duration.300ms class="staggered-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all relative group block">
+                <div data-project-id="{{ $project->id }}" 
+                     style="animation-delay: {{ $loop->index * 75 }}ms;" 
+                     x-show="filter === 'All' || filter === '{{ $projectStatus }}'" 
+                     x-transition.opacity.duration.300ms 
+                     class="staggered-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500 transition-all relative group">
                     
-                    <!-- Card Header -->
-                    <div class="p-5 pb-2 flex justify-between items-start">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white leading-tight pr-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {{ Str::limit($project->project_name, 50) }}
-                        </h3>
-                    </div>
-
-                    <!-- Card Body -->
-                    <div class="px-5 py-2 flex-grow flex flex-col">
-                        <p class="text-sm text-gray-500 dark:text-gray-400 flex-grow">
-                            @if($details && $details->description)
-                                {{ Str::limit(strip_tags($details->description), 100) }}
-                            @else
-                                <span class="italic opacity-75">No description</span>
-                            @endif
-                        </p>
-                        
-                        <!-- Timeline / Status Tags -->
-                        <div class="mt-4 flex flex-wrap gap-2">
-                             @if($details && $details->status === 'Completed')
-                                 <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">Done</span>
-                            @elseif($details && $details->end_date)
-                                @php
-                                    $endDate = \Carbon\Carbon::parse($details->end_date)->startOfDay();
-                                    $today = \Carbon\Carbon::today();
-                                    $daysLeft = $today->diffInDays($endDate, false);
-                                @endphp
-                                @if($daysLeft > 1)
-                                    <span class="inline-flex items-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full">{{ $daysLeft }} days left</span>
-                                @elseif($daysLeft == 1)
-                                    <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">1 day left</span>
-                                @elseif($daysLeft == 0)
-                                    <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">Ends today</span>
-                                @else
-                                    <span class="inline-flex items-center text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded-full">{{ abs($daysLeft) }} {{ abs($daysLeft) == 1 ? 'day' : 'days' }} overdue</span>
-                                @endif
-                            @endif
-                            @if($details && $details->log_hours)
-                                <span class="inline-flex items-center text-[10px] font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded-full">{{ $details->log_hours }} hrs</span>
-                            @endif
+                    <!-- Clickable Card Body -->
+                    <a href="{{ route('crm-projects.show', $project->id) }}" class="flex-grow flex flex-col block">
+                        <!-- Card Header -->
+                        <div class="p-5 pb-2 flex justify-between items-start">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white leading-tight pr-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {{ Str::limit($project->project_name, 50) }}
+                            </h3>
                         </div>
-                    </div>
 
-                    <!-- Card Footer: Assignees -->
+                        <!-- Card Body -->
+                        <div class="px-5 py-2 flex-grow flex flex-col">
+                            <p class="text-sm text-gray-500 dark:text-gray-400 flex-grow">
+                                @if($details && $details->description)
+                                    {{ Str::limit(strip_tags($details->description), 100) }}
+                                @else
+                                    <span class="italic opacity-75">No description</span>
+                                @endif
+                            </p>
+                            
+                            <!-- Timeline / Status Tags -->
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                 @if($details && $details->status === 'Completed')
+                                     <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">Done</span>
+                                @elseif($details && $details->end_date)
+                                    @php
+                                        $endDate = \Carbon\Carbon::parse($details->end_date)->startOfDay();
+                                        $today = \Carbon\Carbon::today();
+                                        $daysLeft = $today->diffInDays($endDate, false);
+                                    @endphp
+                                    @if($daysLeft > 1)
+                                        <span class="inline-flex items-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-full">{{ $daysLeft }} days left</span>
+                                    @elseif($daysLeft == 1)
+                                        <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">1 day left</span>
+                                    @elseif($daysLeft == 0)
+                                        <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-full">Ends today</span>
+                                    @else
+                                        <span class="inline-flex items-center text-[10px] font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded-full">{{ abs($daysLeft) }} {{ abs($daysLeft) == 1 ? 'day' : 'days' }} overdue</span>
+                                    @endif
+                                @endif
+                                @if($details && $details->log_hours)
+                                    <span class="inline-flex items-center text-[10px] font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded-full">{{ $details->log_hours }} hrs</span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Card Footer: Assignees & Action Icons (Integrated in same card container) -->
                     <div class="px-5 py-4 border-t border-gray-50 dark:border-slate-700/50 flex items-center justify-between mt-2">
                         <div class="flex items-center">
                             @if($project->assignees && $project->assignees->count() > 0)
@@ -130,17 +137,29 @@
                             @endif
                         </div>
 
-                        <!-- Project Settings Gear Icon -->
-                        <button type="button" onclick="event.preventDefault(); window.location.href='{{ route('crm-projects.edit', $project->id) }}'" 
-                            class="p-2 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
-                            title="Project Settings">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                        </button>
+                        <!-- Action Icons: To-Do & Settings -->
+                        <div class="flex items-center gap-1">
+                            <!-- To-Do List Icon Link -->
+                            <a href="{{ route('crm-projects.todos.index', $project->id) }}"
+                                class="p-2 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
+                                title="To-Do List">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                </svg>
+                            </a>
+
+                            <!-- Project Settings Gear Icon -->
+                            <a href="{{ route('crm-projects.edit', $project->id) }}"
+                                class="p-2 text-gray-400 hover:text-indigo-600 dark:text-gray-500 dark:hover:text-indigo-400 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
+                                title="Project Settings">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                            </a>
+                        </div>
                     </div>
-                </a>
+                </div>
             @empty
                 <div class="col-span-full py-16 px-6 text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
                     <svg class="mx-auto h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

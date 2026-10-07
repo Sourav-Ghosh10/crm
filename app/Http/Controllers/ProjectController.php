@@ -28,7 +28,7 @@ class ProjectController extends Controller
             ->withSum('payments as calculated_paid_amount', 'amount')
             ->orderBy('id', 'desc');
 
-        if (!$user->isAdmin() && !$user->isManager()) {
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('business-analytics')) {
             $projectsQuery->whereHas('assignees', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
@@ -54,7 +54,7 @@ class ProjectController extends Controller
         $defaultCurrency = '₹'; // Revenue box is specifically requested in INR
 
         $statsBaseQuery = Project::query();
-        if (!$user->isAdmin() && !$user->isManager()) {
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('business-analytics')) {
             $statsBaseQuery->whereHas('assignees', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
@@ -64,7 +64,7 @@ class ProjectController extends Controller
         $paymentsQuery = Payment::join('codec_projects', 'codec_payments.project_id', '=', 'codec_projects.id')
             ->select('codec_payments.amount', 'codec_projects.project_currency');
 
-        if (!$user->isAdmin() && !$user->isManager()) {
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('business-analytics')) {
             $paymentsQuery->whereIn('codec_projects.id', $allowedProjectIds);
         }
 
@@ -428,7 +428,7 @@ class ProjectController extends Controller
         $user = auth()->user();
         $projectModel = Project::findOrFail($id);
 
-        if (!$user->isAdmin() && !$user->isManager()) {
+        if (!$user->isAdmin() && !$user->isManager() && !$user->hasRole('business-analytics')) {
             if (!$projectModel->assignees->contains('id', $user->id)) {
                 abort(403, 'Unauthorized action.');
             }

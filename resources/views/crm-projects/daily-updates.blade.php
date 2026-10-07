@@ -45,7 +45,7 @@
                 <!-- Dashed Plus Button -->
                 @php
                     $user = auth()->user();
-                    $hasSuperAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+                    $hasSuperAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('business-analytics');
                     $isCompleted = $project->crmDetails && $project->crmDetails->status === 'Completed';
                 @endphp
                 @if(!$isCompleted || $hasSuperAccess)

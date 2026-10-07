@@ -214,7 +214,7 @@
                             </x-nav-link>
                         @endif
 
-                        @if(Auth::user()->isAdmin())
+                        @if(Auth::user()->isAdmin() || Auth::user()->hasRole('business-analytics'))
                             <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
                                 class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white' }}">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,7 +448,7 @@
                                 </x-nav-link>
                             @endif
 
-                            @if(Auth::user()->isAdmin())
+                            @if(Auth::user()->isAdmin() || Auth::user()->hasRole('business-analytics'))
                                 <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')"
                                     class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl {{ request()->routeIs('tasks.*') ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600' : 'text-gray-600 dark:text-slate-400' }}">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

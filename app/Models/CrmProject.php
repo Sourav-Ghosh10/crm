@@ -19,7 +19,9 @@ class CrmProject extends Model
         'start_date',
         'end_date',
         'log_hours',
-        'assignee_name'
+        'assignee_name',
+        'attachment_path',
+        'attachment_name',
     ];
 
     public function project()

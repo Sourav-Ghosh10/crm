@@ -17,17 +17,27 @@
                     {{ $project->project_name }}
                 </h1>
 
-                <a href="{{ route('crm-projects.edit', $project->id) }}"
-                    class="flex items-center shrink-0 gap-2 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-gray-400 dark:hover:text-indigo-400 rounded-lg transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    Project Settings
-                </a>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('crm-projects.todos.index', $project->id) }}"
+                        class="flex items-center shrink-0 gap-2 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-gray-400 dark:hover:text-indigo-400 rounded-lg transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        </svg>
+                        To-Do List
+                    </a>
+
+                    <a href="{{ route('crm-projects.edit', $project->id) }}"
+                        class="flex items-center shrink-0 gap-2 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-gray-400 dark:hover:text-indigo-400 rounded-lg transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Project Settings
+                    </a>
+                </div>
             </div>
 
             <!-- Basic activity log / creation info -->
@@ -45,7 +55,7 @@
 
         @php
             $user = auth()->user();
-            $hasSuperAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+            $hasSuperAccess = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('business-analytics');
             $isCompleted = $project->crmDetails && $project->crmDetails->status === 'Completed';
             $isAssigned = $project->assignees->contains('id', $user->id);
             $canLogUpdate = ($hasSuperAccess || $user->hasRole('team-lead') || $isAssigned);
@@ -210,7 +220,7 @@
                                                     </p>
                                                 </div>
                                                 <div class="flex items-center gap-2">
-                                                    @if((auth()->user()->isAdmin() || auth()->user()->isManager() || auth()->user()->hasRole('project-manager') || auth()->user()->id === $update->user_id))
+                                                    @if((auth()->user()->isAdmin() || auth()->user()->isManager() || auth()->user()->hasRole('project-manager') || auth()->user()->hasRole('business-analytics') || auth()->user()->id === $update->user_id))
                                                         <button @click="editing = true; $nextTick(() => initEditor())"
                                                             x-show="!editing"
                                                             class="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700/50"
@@ -331,7 +341,7 @@
 
                         @php
                             $user = auth()->user();
-                            $isSuperUser = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager');
+                            $isSuperUser = $user->isAdmin() || $user->isManager() || $user->hasRole('project-manager') || $user->hasRole('business-analytics');
 
                             // 1. Total hours (estimated): Only show if Total Hours field in Project Details / Settings was provided
                             $hasSetTotalHours = !empty($project->crmDetails) && !is_null($project->crmDetails->log_hours) && (float) $project->crmDetails->log_hours > 0;
@@ -490,6 +500,94 @@
                         </div>
                     </div> <!-- End of Logged Hours Box -->
 
+                    <!-- Project Documents & Attachments Card -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 shrink-0 mb-6"
+                        x-data="{ open: true }">
+                        <button @click="open = !open" type="button"
+                            class="w-full flex items-center justify-between focus:outline-none group"
+                            :class="{'mb-4': open}">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Project Files</h3>
+                                <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-white transition-transform duration-200"
+                                    :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50">
+                                {{ $project->attachments ? $project->attachments->count() : 0 }} FILES
+                            </span>
+                        </button>
+
+                        <div x-show="open" x-transition.opacity.duration.200ms>
+                            @if($project->attachments && $project->attachments->count() > 0)
+                                <div class="space-y-2.5 border-t border-gray-100 dark:border-slate-700/60 pt-4">
+                                    @foreach($project->attachments as $att)
+                                        @php
+                                            $ext = strtolower(pathinfo($att->file_name, PATHINFO_EXTENSION));
+                                            $iconColor = 'indigo';
+                                            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) $iconColor = 'purple';
+                                            elseif ($ext === 'pdf') $iconColor = 'rose';
+                                            elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $iconColor = 'emerald';
+                                            elseif (in_array($ext, ['doc', 'docx', 'txt'])) $iconColor = 'blue';
+                                            elseif (in_array($ext, ['zip', 'rar', 'tar', '7z'])) $iconColor = 'amber';
+                                        @endphp
+                                        <div class="flex items-center justify-between p-2.5 rounded-xl border border-gray-200 dark:border-slate-700/80 bg-white dark:bg-slate-900/80 hover:border-indigo-400 dark:hover:border-indigo-500/50 transition-all group shadow-sm">
+                                            <div class="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                                                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm
+                                                    {{ $iconColor === 'purple' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' : '' }}
+                                                    {{ $iconColor === 'rose' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' : '' }}
+                                                    {{ $iconColor === 'emerald' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : '' }}
+                                                    {{ $iconColor === 'blue' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' : '' }}
+                                                    {{ $iconColor === 'amber' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' : '' }}
+                                                    {{ $iconColor === 'indigo' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20' : '' }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <a href="{{ route('crm-projects.attachments.show', $att->id) }}" target="_blank" 
+                                                       class="text-xs font-bold text-gray-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 truncate block transition-colors" 
+                                                       title="{{ $att->file_name }}">
+                                                        {{ $att->file_name }}
+                                                    </a>
+                                                    <div class="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">
+                                                        <span class="font-medium">{{ $att->formatted_size ?: 'File' }}</span>
+                                                        <span>&bull;</span>
+                                                        <span>{{ $att->created_at->format('M d, Y') }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <a href="{{ route('crm-projects.attachments.show', $att->id) }}" target="_blank"
+                                                   class="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" 
+                                                   title="View">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                    </svg>
+                                                </a>
+                                                <a href="{{ route('crm-projects.attachments.download', $att->id) }}" 
+                                                   class="p-1.5 text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors" 
+                                                   title="Download">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="flex flex-col items-center justify-center w-full min-h-[5rem] px-4 py-3 border border-dashed rounded-xl bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 transition-colors">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium text-center">No files uploaded yet.</p>
+                                    <a href="{{ route('crm-projects.edit', $project->id) }}" class="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline mt-1 font-semibold">Upload in Settings</a>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
                     @php
                         $totalActivityHours = $activities->sum(function ($item) {
                             if (!$item->time_estimate)
@@ -536,7 +634,7 @@
                                     @foreach($activities as $item)
                                         <div
                                             class="py-3 border-b border-gray-100 dark:border-slate-700/60 last:border-0 text-left">
-                                            <p class="text-sm text-gray-900 dark:text-white mb-1">{{ $item->description }}</p>
+                                            <div class="text-sm text-gray-900 dark:text-white mb-1 prose prose-sm dark:prose-invert max-w-none break-words">{!! $item->description !!}</div>
                                             @if($item->attachment_path)
                                                 <div class="mb-2">
                                                     <a href="{{ route('api.activities.attachment.show', $item->id) }}"
@@ -624,7 +722,7 @@
                                     @foreach($enhancements as $item)
                                         <div
                                             class="py-3 border-b border-gray-100 dark:border-slate-700/60 last:border-0 text-left">
-                                            <p class="text-sm text-gray-900 dark:text-white mb-1">{{ $item->description }}</p>
+                                            <div class="text-sm text-gray-900 dark:text-white mb-1 prose prose-sm dark:prose-invert max-w-none break-words">{!! $item->description !!}</div>
                                             @if($item->attachment_path)
                                                 <div class="mb-2">
                                                     <a href="{{ route('api.enhancements.attachment.show', $item->id) }}"
@@ -674,102 +772,6 @@
                                     class="flex flex-col items-center justify-center w-full min-h-[6rem] px-4 py-4 border border-dashed rounded-xl bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 transition-colors">
                                     <p class="text-xs text-gray-500 dark:text-gray-400 font-medium text-center">No recent
                                         enhancements recorded.</p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- To-Do List Card -->
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 shrink-0"
-                        x-data="{ open: false }">
-                        <button @click="open = !open" type="button"
-                            class="w-full flex items-center justify-between focus:outline-none group"
-                            :class="{'mb-4': open}">
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">To-Do List</h3>
-                                <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-white transition-transform duration-200"
-                                    :class="{'rotate-180': open}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
-                            <span
-                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300 border border-gray-200 dark:border-slate-600">
-                                ACTIVITY
-                            </span>
-                        </button>
-
-                        <div x-show="open" x-transition.opacity.duration.200ms>
-                            <!-- Add To-Do Form -->
-                            <form action="{{ route('crm-projects.todos.store', $project->id) }}" method="POST"
-                                class="mb-6">
-                                @csrf
-                                <div class="mb-3">
-                                    <div class="relative flex items-center bg-slate-900/50 dark:bg-slate-900/70 border border-slate-700/80 focus-within:border-indigo-500 rounded-lg overflow-hidden transition-colors">
-                                        <textarea name="description" autocomplete="off" rows="1"
-                                            style="background-color: transparent !important; color: #e2e8f0 !important; border: 0 !important; box-shadow: none !important; resize: none; max-height: 140px; min-height: 44px; outline: none !important;"
-                                            class="w-full min-w-0 bg-transparent border-0 text-slate-200 placeholder-slate-400 focus:ring-0 text-sm py-3 px-3 focus:outline-none"
-                                            placeholder="What needs to be done?" required></textarea>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex items-center gap-2 flex-1">
-                                        <select name="duration_type"
-                                            class="block rounded-lg border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm shadow-sm transition-colors">
-                                            <option value="days">Days</option>
-                                            <option value="weeks">Weeks</option>
-                                            <option value="months">Months</option>
-                                        </select>
-                                        <input type="hidden" name="duration_value" value="1">
-                                    </div>
-                                    <button type="submit"
-                                        class="inline-flex justify-center items-center gap-2 rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                        Add To-Do
-                                    </button>
-                                </div>
-                            </form>
-
-                            @php $todosCollection = $todos ?? $project->todos; @endphp
-
-                            @if($todosCollection->count() > 0)
-                                <div class="space-y-4 border-t border-gray-100 dark:border-slate-700/60 pt-4">
-                                    @foreach($todosCollection as $todo)
-                                        <div
-                                            class="py-3 border-b border-gray-100 dark:border-slate-700/60 last:border-0 text-left">
-                                            <p class="text-sm text-gray-900 dark:text-white mb-1">{{ $todo->description }}</p>
-                                            <div
-                                                class="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-2 bg-indigo-50 dark:bg-indigo-900/30 w-max px-2 py-0.5 rounded">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                                {{ $todo->duration_value }} {{ ucfirst($todo->duration_type) }}
-                                            </div>
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-xs text-gray-500 dark:text-gray-400"
-                                                    x-data="{ date: new Date('{{ $todo->created_at->toISOString() }}') }"
-                                                    x-text="date.toLocaleString('en-US')">{{ $todo->created_at->format('n/j/Y, g:i:s A') }}</span>
-                                                <div class="flex items-center gap-1.5">
-                                                    <div
-                                                        class="w-4 h-4 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-400 flex items-center justify-center text-[8px] font-bold">
-                                                        {{ collect(explode(' ', optional($todo->user)->name ?? 'U'))->map(fn($n) => substr($n, 0, 1))->take(2)->join('') }}
-                                                    </div>
-                                                    <span
-                                                        class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ optional($todo->user)->name }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div
-                                    class="flex flex-col items-center justify-center w-full min-h-[6rem] px-4 py-4 border border-dashed rounded-xl bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 transition-colors">
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium text-center">No
-                                        to-do items added yet.</p>
                                 </div>
                             @endif
                         </div>

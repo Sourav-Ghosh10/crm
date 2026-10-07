@@ -44,6 +44,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role' => ['required', Rule::exists('roles', 'name')],
+            'is_development_team' => ['nullable', 'boolean'],
         ]);
 
         $user = User::create([
@@ -51,6 +52,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
+            'is_development_team' => $request->boolean('is_development_team'),
         ]);
         
         // Also attach the role relation
@@ -88,12 +90,14 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'role' => ['required', Rule::exists('roles', 'name')],
+            'is_development_team' => ['nullable', 'boolean'],
         ]);
 
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
+            'is_development_team' => $request->boolean('is_development_team'),
         ]);
         
         // Sync the role relation

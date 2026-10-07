@@ -10,6 +10,7 @@ use App\Events\ChatMessageSent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\GoogleDriveService;
 
 class ChatController extends Controller
 {
@@ -170,12 +171,21 @@ class ChatController extends Controller
         ]);
 
         $attachment = $request->file('attachment');
+        $attachmentPath = null;
+        if ($attachment) {
+            $gdrive = GoogleDriveService::uploadFile($attachment, 'Chat');
+            if ($gdrive && !empty($gdrive['file_id'])) {
+                $attachmentPath = 'google:' . $gdrive['file_id'];
+            } else {
+                $attachmentPath = $attachment->store('chat-attachments', 'public');
+            }
+        }
 
         $message = ChatMessage::create([
             'chat_room_id' => $room->id,
             'user_id' => $user->id,
             'message' => $request->input('message') ?? '',
-            'attachment_path' => $attachment ? $attachment->store('chat-attachments', 'public') : null,
+            'attachment_path' => $attachmentPath,
             'attachment_name' => $attachment?->getClientOriginalName(),
             'attachment_mime_type' => $attachment?->getClientMimeType(),
         ]);
@@ -214,6 +224,16 @@ class ChatController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
+        if (GoogleDriveService::isGoogleDrivePath($message->attachment_path)) {
+            $fileId = GoogleDriveService::getFileIdFromPath($message->attachment_path);
+            return GoogleDriveService::streamResponse(
+                $fileId,
+                $message->attachment_name,
+                $message->attachment_mime_type,
+                'inline'
+            );
+        }
+
         abort_unless(Storage::disk('public')->exists($message->attachment_path), 404, 'Attachment not found.');
 
         return Storage::disk('public')->response(
@@ -230,6 +250,16 @@ class ChatController extends Controller
 
         if (!$message->room->members()->whereKey($user->id)->exists() || !$message->attachment_path) {
             abort(403, 'Unauthorized access.');
+        }
+
+        if (GoogleDriveService::isGoogleDrivePath($message->attachment_path)) {
+            $fileId = GoogleDriveService::getFileIdFromPath($message->attachment_path);
+            return GoogleDriveService::streamResponse(
+                $fileId,
+                $message->attachment_name,
+                $message->attachment_mime_type,
+                'attachment'
+            );
         }
 
         abort_unless(Storage::disk('public')->exists($message->attachment_path), 404, 'Attachment not found.');

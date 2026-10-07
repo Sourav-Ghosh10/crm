@@ -24,6 +24,7 @@ class RBACSeeder extends Seeder
             'super-admin' => Role::create(['name' => 'super-admin', 'display_name' => 'Super Admin', 'hierarchy_level' => 1, 'description' => 'Unrestricted root-level access.']),
             'manager'     => Role::create(['name' => 'manager', 'display_name' => 'Manager', 'hierarchy_level' => 2, 'description' => 'Operational control with soft delete and recovery.']),
             'supervisor'  => Role::create(['name' => 'supervisor', 'display_name' => 'Supervisor', 'hierarchy_level' => 3, 'description' => 'Team lead oversight and client workflows.']),
+            'business-analytics' => Role::create(['name' => 'business-analytics', 'display_name' => 'Business Analytics', 'hierarchy_level' => 3, 'description' => 'Business analytics role with access to Dashboard, Projects, Project Management, Chat, Tasks & Meetings.']),
             'team-lead'   => Role::create(['name' => 'team-lead', 'display_name' => 'Team Lead', 'hierarchy_level' => 4, 'description' => 'Standard management supervisor for agents.']),
             'agent'       => Role::create(['name' => 'agent', 'display_name' => 'Agent', 'hierarchy_level' => 5, 'description' => 'Standard frontline operations role.'])
         ];
@@ -142,6 +143,22 @@ class RBACSeeder extends Seeder
             $permissions['tasks.edit']->id,
         ]);
 
+        // Business Analytics permissions
+        $roles['business-analytics']->permissions()->sync([
+            $permissions['projects.view']->id,
+            $permissions['projects.create']->id,
+            $permissions['projects.edit']->id,
+            $permissions['projects.payments']->id,
+            $permissions['projects.invoices']->id,
+            $permissions['tasks.view.global']->id,
+            $permissions['tasks.view.assigned']->id,
+            $permissions['tasks.create']->id,
+            $permissions['tasks.edit']->id,
+            $permissions['tasks.delete']->id,
+            $permissions['audit.view']->id,
+            $permissions['logs.view']->id,
+        ]);
+
         // 4. Seed the explicit test users requested by the user
         $testUsers = [
             [
@@ -197,6 +214,7 @@ class RBACSeeder extends Seeder
                 'Administrator' => 'super-admin',
                 'Manager'       => 'manager',
                 'Team Lead'     => 'team-lead',
+                'Business Analytics', 'business-analytics', 'Business Analyst', 'business-analyst' => 'business-analytics',
                 'Agent', 'Beader' => 'agent',
                 default         => 'agent'
             };

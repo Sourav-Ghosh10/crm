@@ -21,6 +21,7 @@ class User extends Authenticatable
     public const ROLE_TEAM_LEAD = 'Team Lead';
     public const ROLE_AGENT = 'Agent';
     public const ROLE_BEADER = 'Beader';
+    public const ROLE_BUSINESS_ANALYTICS = 'Business Analytics';
 
     /**
      * Available roles (legacy support)
@@ -33,6 +34,7 @@ class User extends Authenticatable
             self::ROLE_TEAM_LEAD => 'Team Lead',
             self::ROLE_AGENT => 'Agent',
             self::ROLE_BEADER => 'Beader',
+            self::ROLE_BUSINESS_ANALYTICS => 'Business Analytics',
         ];
     }
 
@@ -41,6 +43,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'is_development_team',
         'fcm_token',
     ];
 
@@ -66,11 +69,27 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is Business Analytics
+     */
+    public function isBusinessAnalytics(): bool
+    {
+        return $this->hasRole('business-analytics') || $this->role === self::ROLE_BUSINESS_ANALYTICS;
+    }
+
+    /**
+     * Check if user is in Development Team
+     */
+    public function isDevelopmentTeam(): bool
+    {
+        return (bool) $this->is_development_team;
+    }
+
+    /**
      * Check if user is Agent
      */
     public function isAgent(): bool
     {
-        if ($this->isAdmin() || $this->isManager() || $this->isTeamLead() || $this->hasRole('project-manager')) {
+        if ($this->isAdmin() || $this->isManager() || $this->isTeamLead() || $this->hasRole('project-manager') || $this->isBusinessAnalytics() || $this->isDevelopmentTeam()) {
             return false;
         }
         return $this->hasRole('agent') || $this->role === self::ROLE_AGENT || $this->role === self::ROLE_BEADER;
@@ -103,9 +122,10 @@ class User extends Authenticatable
             'Team Lead' => 'team-lead',
             'Agent' => 'agent',
             'Beader' => 'agent',
+            'Business Analytics', 'business-analytics', 'Business Analyst', 'business-analyst' => 'business-analytics',
             default => $role
         };
-        return $this->roles->contains('name', $normalized) || ($this->role === $role);
+        return $this->roles->contains('name', $normalized) || ($this->role === $role) || ($this->role === $normalized);
     }
 
     /**
@@ -134,7 +154,7 @@ class User extends Authenticatable
      */
     public function canAccessProjects(): bool
     {
-        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager();
+        return $this->hasPermissionTo('projects.view') || $this->isAdmin() || $this->isManager() || $this->isBusinessAnalytics();
     }
 
     /**
@@ -177,6 +197,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_development_team' => 'boolean',
         ];
     }
 
