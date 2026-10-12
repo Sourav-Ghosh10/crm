@@ -96,6 +96,7 @@
             :class="!showSidebar ? 'flex' : 'hidden sm:flex'"
             x-data="chatRoomComponent({{ $selectedRoom ? $selectedRoom->id : 'null' }}, {{ auth()->id() }}, {{ json_encode(auth()->user()->isAdmin() || auth()->user()->isManager() || auth()->user()->hasRole('project-manager')) }}, {{ json_encode($rooms->pluck('id')) }}, {{ \App\Models\ChatMessage::max('id') ?? 0 }})"
             x-init="init()"
+            @paste.window="if(roomId) handleWindowPaste($event)"
             @dragenter.prevent="if(roomId) handleDragEnter($event)"
             @dragover.prevent="if(roomId) handleDragOver($event)"
             @dragleave.prevent="if(roomId) handleDragLeave($event)"
@@ -458,8 +459,34 @@
                                                             </div>
                                                         </template>
 
+                                                        <!-- Render Image Viewer IF file is an image -->
+                                                        <template x-if="isImageAttachment(msg.attachment_name, msg.attachment_mime_type)">
+                                                            <div class="rounded-xl overflow-hidden border border-black/10 dark:border-white/10 max-w-sm bg-black/10 my-1">
+                                                                <a :href="attachmentUrl(msg.id, msg.attachment_name)" target="_blank" rel="noopener noreferrer" class="block cursor-pointer group">
+                                                                    <img :src="attachmentUrl(msg.id, msg.attachment_name)"
+                                                                        :alt="msg.attachment_name"
+                                                                        loading="lazy"
+                                                                        class="max-h-72 w-auto object-contain rounded-t-xl transition-opacity hover:opacity-95" />
+                                                                </a>
+                                                                <div class="p-1.5 px-2.5 flex items-center justify-between text-xs bg-black/20">
+                                                                    <span class="truncate font-medium max-w-[180px] text-[11px] opacity-90"
+                                                                        x-text="msg.attachment_name"></span>
+                                                                    <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                                                                        <a :href="downloadAttachmentUrl(msg.id)"
+                                                                            class="p-1 rounded hover:bg-white/10 transition-colors"
+                                                                            title="Download"
+                                                                            aria-label="Download attachment">
+                                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                                            </svg>
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+
                                                         <!-- Standard Link for other attachments -->
-                                                        <template x-if="!msg.attachment_name.toLowerCase().endsWith('.pdf')">
+                                                        <template x-if="!msg.attachment_name.toLowerCase().endsWith('.pdf') && !isImageAttachment(msg.attachment_name, msg.attachment_mime_type)">
                                                             <div class="flex items-center justify-between gap-3">
                                                                 <a :href="attachmentUrl(msg.id, msg.attachment_name)"
                                                                     target="_blank" rel="noopener noreferrer"
@@ -539,6 +566,36 @@
                 <!-- Chat Input Form -->
                 <div class="p-4 bg-white dark:bg-[#17181c] border-t border-gray-200 dark:border-[#2f343d] shrink-0">
                     <form @submit.prevent="sendMessage">
+                        <!-- Image / Screenshot preview card before sending -->
+                        <div x-cloak x-show="attachmentPreview"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 -translate-y-2"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 -translate-y-2"
+                            class="mb-3 relative inline-block group">
+                            <div class="relative flex items-center gap-3 p-2 pr-8 rounded-xl bg-gray-100 dark:bg-[#1f2329] border border-indigo-500/30 dark:border-indigo-500/30 shadow-lg">
+                                <div class="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-black/20 border border-gray-300 dark:border-[#2f343d]">
+                                    <img :src="attachmentPreview" class="w-full h-full object-cover" alt="Image preview">
+                                </div>
+                                <div class="min-w-0 pr-2">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-500 dark:text-indigo-300">
+                                        Image attached
+                                    </span>
+                                    <p class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate max-w-[200px] mt-0.5" x-text="attachment?.name"></p>
+                                    <p class="text-[10px] text-slate-500 dark:text-slate-400" x-text="formatFileSize(attachment?.size)"></p>
+                                </div>
+                                <button type="button" @click="clearAttachment"
+                                    class="absolute top-2 right-2 w-5 h-5 rounded-full bg-gray-200 dark:bg-[#2a2f37] hover:bg-red-500 hover:text-white text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors"
+                                    title="Remove image" aria-label="Remove image">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
                         <div
                             :class="{'border-indigo-500 bg-indigo-500/10': dragOver, 'border-gray-200 dark:border-[#2f343d] bg-gray-100 dark:bg-[#1d2025]': !dragOver}"
                             class="relative flex items-center border focus-within:border-slate-500 rounded-lg overflow-hidden transition-colors">
@@ -552,8 +609,8 @@
                                     </path>
                                 </svg>
                             </button>
-                            <!-- Attachment Chip inside message box -->
-                            <div x-show="attachment" style="display: none;" class="flex items-center gap-2 pl-3 pr-2 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-md border border-indigo-500/30 shrink-0 max-w-[150px]">
+                            <!-- Attachment Chip inside message box for non-image attachments -->
+                            <div x-show="attachment && !attachmentPreview" style="display: none;" class="flex items-center gap-2 pl-3 pr-2 py-1.5 bg-indigo-500/20 text-indigo-300 rounded-md border border-indigo-500/30 shrink-0 max-w-[150px]">
                                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7 8.586 13.586a2 2 0 1 0 2.828 2.828l6.414-6.586a4 4 0 0 0-5.656-5.656l-6.415 6.585a6 6 0 1 0 8.486 8.486L20.5 13"></path>
                                 </svg>
@@ -564,6 +621,7 @@
                             </div>
 
                             <textarea x-ref="messageInput" x-model="newMessage" rows="1"
+                                @paste="handlePaste($event)"
                                 @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); sendMessage(); }"
                                 @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 150) + 'px'"
                                 style="resize: none; max-height: 150px; min-height: 44px;"
@@ -964,6 +1022,7 @@
                 seenMessageIds: new Set(), // track message IDs to prevent duplicates
                 newMessage: '',
                 attachment: null,
+                attachmentPreview: null,
                 isSending: false,
                 sendError: '',
                 showScrollButton: false,
@@ -993,6 +1052,8 @@
                         this.justReconnected = true;
                         setTimeout(() => { this.justReconnected = false; }, 3000);
                     });
+
+                    this.initAudioContext();
 
                     if (!this.roomId) return;
 
@@ -1050,7 +1111,7 @@
                                         this.messages.push(msg);
 
                                         if (msg.user_id !== this.currentUserId) {
-                                            
+                                            this.playNotificationSound();
                                             this.showBrowserNotification(msg);
                                         }
 
@@ -1064,7 +1125,7 @@
                                     } else {
                                         // Different room
                                         if (msg.user_id !== this.currentUserId) {
-                                            
+                                            this.playNotificationSound();
                                             this.showBrowserNotification(msg);
 
                                             const badge = document.getElementById(`unread-badge-${id}`);
@@ -1088,8 +1149,28 @@
                 },
 
                 showBrowserNotification(msg) {
-                    // Browser notification logic removed as it is now handled centrally by FCM
-                    // in firebase-init.blade.php and the service worker.
+                    if (document.hasFocus()) return; // Only notify if tab is in background or minimized
+                    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+                    const senderName = msg.user?.name || 'Someone';
+                    const body = msg.attachment_name
+                        ? `📎 ${msg.attachment_name}`
+                        : (msg.message || 'Sent a message');
+
+                    const notifTag = `chat-msg-${msg.id}`;
+                    try {
+                        const notif = new Notification(`New message from ${senderName}`, {
+                            body: body,
+                            icon: '/assets/img/logo.png',
+                            tag: notifTag,
+                        });
+                        notif.onclick = () => {
+                            window.focus();
+                            notif.close();
+                        };
+                    } catch (e) {
+                        console.log('[Notification] Notification display error:', e);
+                    }
                 },
 
                 initAudioContext() {
@@ -1233,12 +1314,117 @@
                     return `${this.attachmentBaseUrl}/${messageId}/download`;
                 },
 
+                isImageAttachment(filename, mimeType) {
+                    if (mimeType && mimeType.startsWith('image/')) return true;
+                    if (filename && /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(filename)) return true;
+                    return false;
+                },
+
+                formatFileSize(bytes) {
+                    if (!bytes || bytes === 0) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                },
+
+                setAttachmentFromFile(file) {
+                    if (!file) return;
+
+                    let finalFile = file;
+                    // If the file has a generic name (e.g. from clipboard screenshot like "image.png" or "blob"), give it a timestamped name
+                    if (!file.name || file.name === 'image.png' || file.name === 'blob') {
+                        const ext = file.type ? file.type.split('/')[1] : 'png';
+                        const safeExt = ext === 'jpeg' ? 'jpg' : (ext || 'png');
+                        const now = new Date();
+                        const pad = (n) => String(n).padStart(2, '0');
+                        const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                        const filename = `screenshot_${timestamp}.${safeExt}`;
+                        try {
+                            finalFile = new File([file], filename, { type: file.type || 'image/png' });
+                        } catch (e) {
+                            finalFile = file;
+                        }
+                    }
+
+                    if (this.attachmentPreview) {
+                        URL.revokeObjectURL(this.attachmentPreview);
+                        this.attachmentPreview = null;
+                    }
+
+                    this.attachment = finalFile;
+                    if (finalFile.type && finalFile.type.startsWith('image/')) {
+                        this.attachmentPreview = URL.createObjectURL(finalFile);
+                    }
+
+                    try {
+                        if (this.$refs.attachmentInput) {
+                            const dt = new DataTransfer();
+                            dt.items.add(finalFile);
+                            this.$refs.attachmentInput.files = dt.files;
+                        }
+                    } catch (e) {
+                        // DataTransfer fallback
+                    }
+
+                    this.$nextTick(() => {
+                        if (this.$refs.messageInput) {
+                            this.$refs.messageInput.focus();
+                        }
+                    });
+                },
+
+                handlePaste(event) {
+                    const clipboardData = event.clipboardData || window.clipboardData;
+                    if (!clipboardData) return;
+
+                    let imageFile = null;
+
+                    // 1. Check clipboard files (e.g., copied image file from file system)
+                    if (clipboardData.files && clipboardData.files.length > 0) {
+                        for (let i = 0; i < clipboardData.files.length; i++) {
+                            if (clipboardData.files[i].type && clipboardData.files[i].type.startsWith('image/')) {
+                                imageFile = clipboardData.files[i];
+                                break;
+                            }
+                        }
+                    }
+
+                    // 2. Check clipboard items (standard for screenshots via PrintScreen/Win+Shift+S)
+                    if (!imageFile && clipboardData.items && clipboardData.items.length > 0) {
+                        for (let i = 0; i < clipboardData.items.length; i++) {
+                            const item = clipboardData.items[i];
+                            if (item.type && item.type.startsWith('image/')) {
+                                const blob = item.getAsFile();
+                                if (blob) {
+                                    imageFile = blob;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (imageFile) {
+                        event.preventDefault();
+                        this.setAttachmentFromFile(imageFile);
+                    }
+                    // If no image, normal text paste will proceed into textarea
+                },
+
+                handleWindowPaste(event) {
+                    if (!this.roomId) return;
+                    const activeEl = document.activeElement;
+                    // Do not intercept if user is typing in another input (like search box or modal)
+                    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                        return;
+                    }
+                    this.handlePaste(event);
+                },
+
                 selectAttachment(event) {
-                    this.attachment = event.target.files[0] || null;
-                    if (this.attachment) {
-                        this.$nextTick(() => {
-                            if (this.$refs.messageInput) this.$refs.messageInput.focus();
-                        });
+                    const file = event.target.files[0] || null;
+                    if (file) {
+                        this.setAttachmentFromFile(file);
                     }
                 },
 
@@ -1281,32 +1467,23 @@
                     this.dragCounter = 0;
                     this.dragOver = false;
                     
-                    // Safely extract files from dataTransfer
                     let files = null;
                     if (event.dataTransfer && event.dataTransfer.files) {
                         files = event.dataTransfer.files;
                     }
 
                     if (files && files.length > 0) {
-                        this.attachment = files[0];
-                        // Also try assigning to the hidden input to be perfectly safe with all form interactions
-                        try {
-                            if (this.$refs.attachmentInput) {
-                                this.$refs.attachmentInput.files = files;
-                            }
-                        } catch (e) {
-                            console.log("Could not assign to input.files, falling back to state attachment only", e);
-                        }
-
-                        this.$nextTick(() => {
-                            if (this.$refs.messageInput) this.$refs.messageInput.focus();
-                        });
+                        this.setAttachmentFromFile(files[0]);
                     } else {
                         console.warn("Drop event contained no files!");
                     }
                 },
 
                 clearAttachment() {
+                    if (this.attachmentPreview) {
+                        URL.revokeObjectURL(this.attachmentPreview);
+                        this.attachmentPreview = null;
+                    }
                     this.attachment = null;
                     if (this.$refs.attachmentInput) this.$refs.attachmentInput.value = '';
                 },

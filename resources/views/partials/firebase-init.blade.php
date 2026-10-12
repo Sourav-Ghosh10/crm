@@ -43,25 +43,25 @@
             if (permission === 'granted') {
                 console.log('Notification permission granted.');
 
-                // Manually register the service worker with a cache buster
-                navigator.serviceWorker.register('{{ asset('firebase-messaging-sw.js') }}?v=' + new Date().getTime())
+                // Register the service worker and wait until it is fully active
+                navigator.serviceWorker.register('{{ asset('firebase-messaging-sw.js') }}')
+                    .then(() => navigator.serviceWorker.ready)
                     .then((registration) => {
-                        // Get token using our explicit registration
-                        getToken(messaging, {
+                        return getToken(messaging, {
                             vapidKey: 'BBtw91KqAowZiEXM9mvZhJeSdWSq--FERPUAWv1CCTdZhVYt57jqqnu4dKuGicMti2BwJLMoPjmJ4SoO5x8sRAA',
                             serviceWorkerRegistration: registration
-                        })
-                            .then((currentToken) => {
-                                if (currentToken) {
-                                    console.log('FCM Token:', currentToken);
-                                    sendTokenToServer(currentToken);
-                                } else {
-                                    console.log('No registration token available. Request permission to generate one.');
-                                }
-                            }).catch((err) => {
-                                console.log('An error occurred while retrieving token. ', err);
-                                alert("Firebase Push Setup Error: " + err.message);
-                            });
+                        });
+                    })
+                    .then((currentToken) => {
+                        if (currentToken) {
+                            console.log('FCM Token:', currentToken);
+                            sendTokenToServer(currentToken);
+                        } else {
+                            console.log('No registration token available. Request permission to generate one.');
+                        }
+                    })
+                    .catch((err) => {
+                        console.error('An error occurred while retrieving token: ', err);
                     });
             } else {
                 console.log('Unable to get permission to notify.');

@@ -68,7 +68,15 @@ class FcmService
             if ($response->successful()) {
                 return true;
             } else {
-                Log::error('FCM Notification Failed: ' . $response->body());
+                $errorBody = $response->json();
+                $errorCode = $errorBody['error']['details'][0]['errorCode'] ?? null;
+                if ($errorCode === 'UNREGISTERED' || $response->status() === 404) {
+                    \App\Models\FcmToken::where('token', $fcmToken)->delete();
+                    \App\Models\User::where('fcm_token', $fcmToken)->update(['fcm_token' => null]);
+                    Log::info('Pruned unregistered FCM token: ' . substr($fcmToken, 0, 15) . '...');
+                } else {
+                    Log::error('FCM Notification Failed: ' . $response->body());
+                }
                 return false;
             }
 

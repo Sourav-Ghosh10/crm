@@ -197,9 +197,15 @@ class ChatController extends Controller
         // Send FCM Push Notification
         $otherMembers = $room->members()->where('users.id', '!=', $user->id)->get();
         foreach ($otherMembers as $member) {
-            if ($member->fcm_token) {
+            $tokens = $member->fcmTokens()->pluck('token')->filter()->toArray();
+            if (empty($tokens) && $member->fcm_token) {
+                $tokens = [$member->fcm_token];
+            }
+            $tokens = array_unique($tokens);
+
+            foreach ($tokens as $fcmToken) {
                 \App\Services\FcmService::sendNotification(
-                    $member->fcm_token,
+                    $fcmToken,
                     "New message from " . $user->name,
                     strlen($message->message) > 0 ? $message->message : ($message->attachment_name ?? 'Attachment'),
                     [
