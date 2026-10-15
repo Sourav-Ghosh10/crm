@@ -139,7 +139,7 @@
                     @foreach([
                         ['Currency',    $project->project_currency ?? '₹'],
                         ['Base Amount', ($project->project_currency ?? '₹') . number_format($project->calculated_base_amount, 2)],
-                        ['Tax Rate',    $project->tax_rate . '% Tax'],
+                        ['Tax Rate',    $project->tax_name ? ($project->tax_name . ' (' . $project->tax_rate . '%)') : ($project->tax_rate . '% Tax')],
                         ['Tax Amount',  ($project->project_currency ?? '₹') . number_format($project->calculated_total_amount - $project->calculated_base_amount, 2)],
                     ] as [$label, $value])
                         <div class="flex justify-between py-2.5 border-b border-gray-50 dark:border-slate-700/50 last:border-0">

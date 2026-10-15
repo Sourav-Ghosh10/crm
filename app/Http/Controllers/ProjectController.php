@@ -378,6 +378,7 @@ class ProjectController extends Controller
             'client_address' => 'required|string',
             'base_amount' => 'required|numeric|min:0',
             'tax_rate' => 'required|numeric|min:0|max:100',
+            'tax_name' => 'nullable|string|max:50',
             'project_currency' => 'required|string|max:10',
             'status' => 'required|string',
             'supplementary_charges' => 'nullable|array',
@@ -386,6 +387,12 @@ class ProjectController extends Controller
             'supplementary_charges.*.gst_amount' => 'required|numeric|min:0',
             'supplementary_charges.*.total_amount' => 'required|numeric|min:0',
         ]);
+
+        if (empty($data['tax_name'])) {
+            $settings = Setting::getConfig();
+            $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $data['tax_rate']);
+            $data['tax_name'] = $taxTypeMatch ? $taxTypeMatch['name'] : ($data['tax_rate'] == 0 ? 'No Tax' : 'GST');
+        }
 
         $data['total_amount'] = $data['base_amount'] * (1 + ($data['tax_rate'] / 100));
 
@@ -481,6 +488,7 @@ class ProjectController extends Controller
             'client_address' => 'required|string',
             'base_amount' => 'required|numeric|min:0',
             'tax_rate' => 'required|numeric|min:0|max:100',
+            'tax_name' => 'nullable|string|max:50',
             'project_currency' => 'required|string|max:10',
             'status' => 'required|string',
             'supplementary_charges' => 'nullable|array',
@@ -489,6 +497,10 @@ class ProjectController extends Controller
             'supplementary_charges.*.gst_amount' => 'required|numeric|min:0',
             'supplementary_charges.*.total_amount' => 'required|numeric|min:0',
         ]);
+
+        if (empty($data['tax_name'])) {
+            $data['tax_name'] = $project->tax_name;
+        }
 
         // Calculate NEW Grand Total (Current Total + New Supplementary Charges)
         // Note: Base amount and tax rate are readonly in UI to preserve history consistency
@@ -616,11 +628,14 @@ class ProjectController extends Controller
         $subtotal = $payments->sum('base_amount');
         $tax_amount = $payments->sum('gst');
         $grand_total = $payments->sum('amount');
-        $tax_rate = $project->tax_rate;
+        $tax_rate = (float) $project->tax_rate;
 
-        // Determine tax breakdown
-        $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $tax_rate);
-        $taxName = $taxTypeMatch ? $taxTypeMatch['name'] : 'Tax';
+        // Determine tax breakdown based on tax_name column from codec_projects table
+        $taxName = trim($project->tax_name ?: '');
+        if ($taxName === '') {
+            $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $tax_rate);
+            $taxName = $taxTypeMatch ? $taxTypeMatch['name'] : 'Tax';
+        }
 
         $selected_taxes = [];
         if (strtoupper($taxName) === 'GST') {
@@ -748,11 +763,14 @@ class ProjectController extends Controller
         $tax_amount = $installments->sum('project_gst');
         $grand_total = $installments->sum('total_amount');
         $remainingBalance = $grand_total - $paidTotal;
-        $tax_rate = $project->tax_rate;
+        $tax_rate = (float) $project->tax_rate;
 
-        // Determine tax breakdown
-        $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $tax_rate);
-        $taxName = $taxTypeMatch ? $taxTypeMatch['name'] : 'Tax';
+        // Determine tax breakdown based on tax_name column from codec_projects table
+        $taxName = trim($project->tax_name ?: '');
+        if ($taxName === '') {
+            $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $tax_rate);
+            $taxName = $taxTypeMatch ? $taxTypeMatch['name'] : 'Tax';
+        }
 
         $selected_taxes = [];
         if (strtoupper($taxName) === 'GST') {
@@ -854,9 +872,14 @@ class ProjectController extends Controller
             ];
         }
 
-        $tax_rate = $project->tax_rate;
-        $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $tax_rate);
-        $taxName = $taxTypeMatch ? $taxTypeMatch['name'] : 'Tax';
+        $tax_rate = (float) $project->tax_rate;
+
+        // Determine tax breakdown based on tax_name column from codec_projects table
+        $taxName = trim($project->tax_name ?: '');
+        if ($taxName === '') {
+            $taxTypeMatch = collect($settings->available_taxes)->firstWhere('rate', $tax_rate);
+            $taxName = $taxTypeMatch ? $taxTypeMatch['name'] : 'Tax';
+        }
 
         $selected_taxes = [];
         if (strtoupper($taxName) === 'GST') {

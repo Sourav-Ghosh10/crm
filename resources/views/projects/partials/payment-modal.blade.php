@@ -126,7 +126,7 @@
                 <div class="pr-6">
                     <label class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-3 block">
                         <span x-text="selectedProject?.tax_rate || 0"></span>% 
-                        <span x-text="selectedProject?.tax_rate == 18 ? 'GST' : (selectedProject?.tax_rate == 5 ? 'VAT' : 'Tax')"></span> Breakup
+                        <span x-text="selectedProject?.tax_name || (selectedProject?.tax_rate == 18 ? 'GST' : (selectedProject?.tax_rate == 5 ? 'VAT' : 'Tax'))"></span> Breakup
                     </label>
                     <div class="text-4xl font-black text-slate-800 dark:text-white/90">
                         <span class="text-xs text-slate-400 dark:text-slate-600 mr-2 italic font-bold" x-text="selectedProject?.project_currency || '₹'"></span><span x-text="gstAmount"></span>

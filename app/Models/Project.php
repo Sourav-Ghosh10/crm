@@ -25,6 +25,7 @@ class Project extends Model
         'client_gst',
         'base_amount',
         'tax_rate',
+        'tax_name',
         'total_amount',
         'project_currency',
         'status',

@@ -76,9 +76,9 @@
 
     @php
         $taxRateVal = old('tax_rate', $project->tax_rate);
-        // Find the matching tax name from settings
+        // Find the matching tax name from project or settings
         $matchedTax = collect($settings->available_taxes)->firstWhere('rate', $taxRateVal);
-        $taxTypeName = $matchedTax ? $matchedTax['name'] : ($taxRateVal == 0 ? 'No Tax' : 'GST');
+        $taxTypeName = old('tax_name', $project->tax_name) ?: ($matchedTax ? $matchedTax['name'] : ($taxRateVal == 0 ? 'No Tax' : 'GST'));
         $existingCharges = $project->projectAmounts
             ->filter(fn($a) => !str_contains($a->description, '(Base Amount)') && $a->description !== $project->project_name && !str_starts_with($a->description, 'Payment via'))
             ->values();
@@ -353,6 +353,7 @@
                             <span x-text="taxType"></span> Rate (%) <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
+                            <input type="hidden" name="tax_name" :value="taxType">
                             <input type="number" name="tax_rate" x-model="taxRate" step="0.01" readonly
                                 class="w-full px-4 py-2.5 bg-gray-100/50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed">
                             <span

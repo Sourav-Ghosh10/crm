@@ -25,12 +25,14 @@
     @php
         $firstTax = $settings->available_taxes[0] ?? ['name' => 'GST', 'rate' => 18];
         $firstSymbol = $settings->available_currencies[0]['symbol'] ?? '₹';
+        $defaultTaxRate = old('tax_rate', $firstTax['rate']);
+        $defaultTaxName = old('tax_name', $firstTax['name']);
     @endphp
     <form action="{{ route('projects.store') }}" method="POST" novalidate x-data="{
-        baseAmount: '',
-        taxRate: {{ $firstTax['rate'] }},
-        taxType: '{{ $firstTax['name'] }}',
-        currencySymbol: '{{ $firstSymbol }}',
+        baseAmount: '{{ old('base_amount', '') }}',
+        taxRate: {{ $defaultTaxRate }},
+        taxType: '{{ $defaultTaxName }}',
+        currencySymbol: '{{ old('project_currency', $firstSymbol) }}',
         get totalAmount() {
             let base = parseFloat(this.baseAmount) || 0;
             let tax  = parseFloat(this.taxRate) || 0;
@@ -258,7 +260,9 @@
                         <span x-text="taxType"></span> Rate (%) <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
+                        <input type="hidden" name="tax_name" :value="taxType">
                         <input type="number" name="tax_rate" x-model="taxRate" step="0.01" min="0" max="100"
+                            @input="let match = {{ json_encode($settings->available_taxes) }}.find(t => parseFloat(t.rate) === parseFloat(taxRate)); if (match) { taxType = match.name; } else if (parseFloat(taxRate) === 0) { taxType = 'No Tax'; }"
                             class="w-full px-4 py-2.5 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow">
                         <span
                             class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 text-sm font-semibold">%</span>

@@ -447,8 +447,7 @@
                     </tr>
                     @foreach($selected_taxes as $tax)
                         <tr>
-                            <td class="details-label" style="text-align: left;">{{ $tax['name'] }} ({{ $tax['rate'] }}%)
-                            </td>
+                            <td class="details-label" style="text-align: left;">{{ $tax['name'] }} ({{ $tax['rate'] }}%)</td>
                             <td class="text-right"><span class="currency-symbol">{{ $currency_symbol }}</span>
                                 {{ number_format($tax['amount'], 2) }}</td>
                         </tr>
