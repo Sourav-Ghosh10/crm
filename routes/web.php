@@ -81,6 +81,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat/rooms/{room}/members', [\App\Http\Controllers\ChatController::class, 'roomMembers'])->name('chat.rooms.members');
     Route::post('/chat/rooms/{room}/members', [\App\Http\Controllers\ChatController::class, 'addMember'])->name('chat.rooms.members.add');
     Route::delete('/chat/rooms/{room}/members/{user}', [\App\Http\Controllers\ChatController::class, 'removeMember'])->name('chat.rooms.members.remove');
+
+    // WebRTC 1-on-1 Call Routes
+    Route::post('/call/signal', [\App\Http\Controllers\CallController::class, 'signal'])->name('call.signal');
+    Route::post('/call/log', [\App\Http\Controllers\CallController::class, 'logCall'])->name('call.log');
     Route::get('/crm-projects/{project}/daily-updates', [\App\Http\Controllers\CrmProjectController::class, 'dailyUpdatesIndex'])->name('crm-projects.daily-updates');
     Route::post('/crm-projects/{project}/daily-updates', [\App\Http\Controllers\CrmProjectController::class, 'storeDailyUpdate'])->name('crm-projects.daily-updates.store');
     Route::patch('/crm-projects/{project}/daily-updates/{update}', [\App\Http\Controllers\CrmProjectController::class, 'updateDailyUpdate'])->name('crm-projects.daily-updates.update');

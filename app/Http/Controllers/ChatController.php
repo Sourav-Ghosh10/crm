@@ -75,6 +75,7 @@ class ChatController extends Controller
                 if (!$selectedRoom->is_group) {
                     $otherMember = $selectedRoom->members->firstWhere('id', '!=', $user->id);
                     $selectedRoom->display_name = $otherMember ? $otherMember->name : 'Deleted User';
+                    $selectedRoom->other_user = $otherMember;
                 } else {
                     $selectedRoom->display_name = $selectedRoom->name;
                 }

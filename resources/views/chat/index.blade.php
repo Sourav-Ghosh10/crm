@@ -198,6 +198,33 @@
                             </button>
                         </div>
 
+                        <!-- Right Side: 1-on-1 Call Buttons -->
+                        @if(!$selectedRoom->is_group && isset($selectedRoom->other_user) && $selectedRoom->other_user)
+                            <div class="ml-auto flex items-center gap-1 sm:gap-2 z-10">
+                                <!-- Voice Call Button -->
+                                <button type="button" 
+                                    @click="$dispatch('start-call', { targetUserId: {{ $selectedRoom->other_user->id }}, targetUserName: '{{ addslashes($selectedRoom->other_user->name) }}', callType: 'audio', roomId: {{ $selectedRoom->id }} })"
+                                    title="Voice Call"
+                                    class="p-2 sm:px-3 sm:py-2 text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 bg-gray-200/60 dark:bg-[#282d37] hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold">
+                                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                    </svg>
+                                    <span class="hidden md:inline">Voice Call</span>
+                                </button>
+
+                                <!-- Video Call Button -->
+                                <button type="button" 
+                                    @click="$dispatch('start-call', { targetUserId: {{ $selectedRoom->other_user->id }}, targetUserName: '{{ addslashes($selectedRoom->other_user->name) }}', callType: 'video', roomId: {{ $selectedRoom->id }} })"
+                                    title="Video Call"
+                                    class="p-2 sm:px-3 sm:py-2 text-slate-600 dark:text-slate-300 hover:text-indigo-500 dark:hover:text-indigo-400 bg-gray-200/60 dark:bg-[#282d37] hover:bg-indigo-500/10 dark:hover:bg-indigo-500/10 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 text-xs font-semibold">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span class="hidden md:inline">Video Call</span>
+                                </button>
+                            </div>
+                        @endif
+
                     </div>
 
                     <!-- Chat Messages Body -->
@@ -1080,8 +1107,9 @@
                         console.log('[Echo] Subscribing to private channel: chat-room.' + this.roomId);
 
                         this.allRoomIds.forEach(id => {
-                            window.Echo.private(`chat-room.${id}`)
-                                .listen('.ChatMessageSent', (e) => {
+                            const roomChan = window.Echo.private(`chat-room.${id}`);
+
+                            roomChan.listen('.ChatMessageSent', (e) => {
                                     console.log(`[Echo] Message received from Pusher for room ${id}:`, e);
                                     const msg = e.message;
 
@@ -1136,6 +1164,15 @@
                                         }
                                     }
                                 });
+
+                            // Listen for 1-on-1 calls on this room and forward to CallManager
+                            const onCallSignal = (e) => {
+                                console.log(`[Echo chat-room.${id}] Forwarding CallSignal:`, e);
+                                window.dispatchEvent(new CustomEvent('call-signal-received', { detail: e }));
+                            };
+                            roomChan.listen('.CallSignal', onCallSignal)
+                                    .listen('CallSignal', onCallSignal)
+                                    .listen('.App\\Events\\CallSignalEvent', onCallSignal);
                         });
 
                         console.log('[Echo] ✅ Subscribed successfully.');

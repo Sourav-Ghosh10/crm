@@ -25,6 +25,11 @@
         @auth
             window.__USER_ID__     = "{{ auth()->id() }}";
         @endauth
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.axios) {
+                window.axios.defaults.headers.common['X-CSRF-TOKEN'] = '{{ csrf_token() }}';
+            }
+        });
     </script>
 
     <!-- Scripts -->
@@ -1288,10 +1293,11 @@
                     }
                 });
             </script>
-        @endauth
+        @include('partials.call-manager')
+    @endauth
 
-        <!-- Notification Sound -->
-        <audio id="notificationSound" src="{{ asset('assets/audio/notification.wav') }}" preload="auto"></audio>
+    <!-- Notification Sound -->
+    <audio id="notificationSound" src="{{ asset('assets/audio/notification.wav') }}" preload="auto"></audio>
 </body>
 
 </html>

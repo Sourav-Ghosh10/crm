@@ -507,11 +507,11 @@ class ProjectController extends Controller
         $newChargesTotal = 0;
         if (!empty($data['supplementary_charges'])) {
             foreach ($data['supplementary_charges'] as $charge) {
-                $newChargesTotal += (float)$charge['total_amount'];
+                $newChargesTotal += (float) $charge['total_amount'];
             }
         }
-        
-        $data['total_amount'] = (float)$project->total_amount + $newChargesTotal;
+
+        $data['total_amount'] = (float) $project->total_amount + $newChargesTotal;
 
         // 1. Update project core info (Name, Status, Client info, etc.)
         $project->update($data);
@@ -521,9 +521,9 @@ class ProjectController extends Controller
             foreach ($data['supplementary_charges'] as $charge) {
                 ProjectAmount::create([
                     'project_id' => $project->id,
-                    'project_amount' => (float)$charge['base_amount'],
-                    'project_gst' => (float)$charge['gst_amount'],
-                    'total_amount' => (float)$charge['total_amount'],
+                    'project_amount' => (float) $charge['base_amount'],
+                    'project_gst' => (float) $charge['gst_amount'],
+                    'total_amount' => (float) $charge['total_amount'],
                     'description' => $charge['description'],
                 ]);
             }
@@ -608,6 +608,7 @@ class ProjectController extends Controller
 
                 if ($existingInvoicePaymentIds === $currentSelectionIds) {
                     return $this->downloadInvoice($existingInvoice->id);
+
                 }
             }
         }
