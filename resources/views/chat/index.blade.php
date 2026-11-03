@@ -1164,15 +1164,6 @@
                                         }
                                     }
                                 });
-
-                            // Listen for 1-on-1 calls on this room and forward to CallManager
-                            const onCallSignal = (e) => {
-                                console.log(`[Echo chat-room.${id}] Forwarding CallSignal:`, e);
-                                window.dispatchEvent(new CustomEvent('call-signal-received', { detail: e }));
-                            };
-                            roomChan.listen('.CallSignal', onCallSignal)
-                                    .listen('CallSignal', onCallSignal)
-                                    .listen('.App\\Events\\CallSignalEvent', onCallSignal);
                         });
 
                         console.log('[Echo] ✅ Subscribed successfully.');

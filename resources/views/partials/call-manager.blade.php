@@ -18,6 +18,7 @@ function callManagerComponent() {
         isMuted: false,
         isCameraOn: true,
         isScreenSharing: false,
+        isAccepting: false,
         durationSeconds: 0,
         timerInterval: null,
         callTimeout: null,
@@ -28,6 +29,7 @@ function callManagerComponent() {
         remoteStream: null,
         screenStream: null,
         iceCandidateQueue: [],
+        processedSignalIds: new Set(),
 
         rtcConfig: {
             iceServers: [
@@ -49,42 +51,19 @@ function callManagerComponent() {
             if (!this.currentUserId) return;
             console.log('[WebRTC CallManager] Initialized for user:', this.currentUserId, '(' + this.currentUserName + ')');
 
-            // 1. Listen for signals forwarded from chat room Echo listeners (CustomEvent)
+            this.processedSignalIds = new Set();
+
+            // 1. Listen for signals forwarded from custom events
             window.addEventListener('call-signal-received', (event) => {
                 console.log('[WebRTC CallManager] Received signal via window CustomEvent:', event.detail);
                 this.handleIncomingSignal(event.detail);
             });
 
-            // 2. Attach Echo signaling listeners directly
+            // 2. Attach Echo signaling listener directly to target user's private channel
             this.waitForEcho(() => {
-                // User private channel
                 const userChannelName = `App.Models.User.${this.currentUserId}`;
                 const userChannel = window.Echo.private(userChannelName);
                 this.bindSignalListeners(userChannel, userChannelName);
-
-                // Active chat room channel if present in URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const currentRoomId = urlParams.get('room_id');
-                if (currentRoomId) {
-                    const roomChannelName = `chat-room.${currentRoomId}`;
-                    const roomChannel = window.Echo.private(roomChannelName);
-                    this.bindSignalListeners(roomChannel, roomChannelName);
-                }
-
-                // 3. Fallback: Listen globally on Pusher if connector is available
-                try {
-                    const pusherInst = window.Echo.connector?.pusher;
-                    if (pusherInst && typeof pusherInst.bind_global === 'function') {
-                        pusherInst.bind_global((eventName, data) => {
-                            if (eventName && eventName.includes('CallSignal')) {
-                                console.log('[WebRTC CallManager] Caught event via Pusher bind_global:', eventName, data);
-                                this.handleIncomingSignal(data);
-                            }
-                        });
-                    }
-                } catch (e) {
-                    console.warn('[WebRTC CallManager] Pusher bind_global setup:', e);
-                }
             });
 
             // Make available globally for testing / debugging
@@ -109,10 +88,7 @@ function callManagerComponent() {
                 this.handleIncomingSignal(data);
             };
 
-            channel.listen('.CallSignal', handler)
-                   .listen('CallSignal', handler)
-                   .listen('.App\\Events\\CallSignalEvent', handler)
-                   .listen('App\\Events\\CallSignalEvent', handler);
+            channel.listen('.CallSignal', handler);
         },
 
         waitForEcho(callback, attempts = 0) {
@@ -122,6 +98,25 @@ function callManagerComponent() {
                 setTimeout(() => this.waitForEcho(callback, attempts + 1), 400);
             } else {
                 console.warn('[WebRTC CallManager] Echo not detected after 10s.');
+            }
+        },
+
+        async getLocalUserMedia() {
+            try {
+                return await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    },
+                    video: this.callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false
+                });
+            } catch (err) {
+                console.warn('[WebRTC CallManager] Advanced audio constraints failed, using fallback:', err);
+                return await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: this.callType === 'video' ? true : false
+                });
             }
         },
 
@@ -143,19 +138,9 @@ function callManagerComponent() {
             this.isMinimized = false;
             this.durationSeconds = 0;
 
-            // Ensure room channel is also listening
-            if (this.roomId && window.Echo) {
-                const roomChannelName = `chat-room.${this.roomId}`;
-                const roomChannel = window.Echo.private(roomChannelName);
-                this.bindSignalListeners(roomChannel, roomChannelName);
-            }
-
             try {
-                // Request user media
-                this.localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: this.callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false
-                });
+                // Request user media with echo cancellation and noise suppression
+                this.localStream = await this.getLocalUserMedia();
 
                 this.attachLocalVideo();
                 this.startRingTone('outgoing');
@@ -214,12 +199,33 @@ function callManagerComponent() {
             const senderId = data.senderId;
             const payload = data.payload || {};
 
+            // Deduplication: ignore if this exact signal was already processed recently
+            const signalId = data.signalId || `${type}_${senderId}_${JSON.stringify(payload).slice(0, 60)}`;
+            if (!this.processedSignalIds) {
+                this.processedSignalIds = new Set();
+            }
+            if (this.processedSignalIds.has(signalId)) {
+                console.log(`[WebRTC CallManager] ⏭ Duplicate signal [${type}] from sender ${senderId} ignored.`);
+                return;
+            }
+            this.processedSignalIds.add(signalId);
+            setTimeout(() => {
+                if (this.processedSignalIds) this.processedSignalIds.delete(signalId);
+            }, 8000);
+
             console.log(`[WebRTC CallManager] ✅ Handling valid signal [${type}] from sender ${senderId}:`, data);
 
             switch (type) {
                 case 'incoming-call':
                     if (this.callState !== 'idle') {
-                        // User is busy
+                        // Check if this signal is from the current active/ringing caller
+                        const currentPeerId = this.callerId || this.targetUserId;
+                        if (currentPeerId && parseInt(currentPeerId) === parseInt(senderId)) {
+                            console.log('[WebRTC CallManager] Duplicate incoming-call from existing peer', senderId, '- ignoring.');
+                            return;
+                        }
+                        // Genuinely on another call with someone else
+                        console.log('[WebRTC CallManager] Busy: incoming call from', senderId, 'while currently in state', this.callState, 'with', currentPeerId);
                         this.sendSignal('call-busy', {}, senderId);
                         return;
                     }
@@ -230,13 +236,6 @@ function callManagerComponent() {
                     this.roomId = data.roomId || payload.roomId || null;
                     this.callState = 'ringing';
                     this.startRingTone('incoming');
-
-                    // If room id provided, ensure listening on room channel too
-                    if (this.roomId && window.Echo) {
-                        const roomChannelName = `chat-room.${this.roomId}`;
-                        const roomChannel = window.Echo.private(roomChannelName);
-                        this.bindSignalListeners(roomChannel, roomChannelName);
-                    }
                     break;
 
                 case 'call-accepted':
@@ -247,8 +246,11 @@ function callManagerComponent() {
                         this.startTimer();
                         await this.setupPeerConnection();
                         
-                        // Create WebRTC Offer
-                        const offer = await this.peerConnection.createOffer();
+                        // Create WebRTC Offer with audio enabled
+                        const offer = await this.peerConnection.createOffer({
+                            offerToReceiveAudio: true,
+                            offerToReceiveVideo: this.callType === 'video'
+                        });
                         await this.peerConnection.setLocalDescription(offer);
                         this.sendSignal('webrtc-offer', { sdp: offer });
                     }
@@ -276,19 +278,19 @@ function callManagerComponent() {
                 case 'webrtc-offer':
                     if (this.callState === 'connected' && this.peerConnection) {
                         try {
-                            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-                            // Drain any queued ICE candidates
-                            while (this.iceCandidateQueue.length > 0) {
-                                const cand = this.iceCandidateQueue.shift();
-                                try {
-                                    await this.peerConnection.addIceCandidate(new RTCIceCandidate(cand));
-                                } catch (e) {
-                                    console.warn('[WebRTC CallManager] Error adding queued ICE candidate on offer:', e);
-                                }
+                            if (this.peerConnection.signalingState === 'stable') {
+                                const desc = (typeof payload.sdp === 'object' && payload.sdp.type) 
+                                    ? payload.sdp 
+                                    : { type: 'offer', sdp: payload.sdp };
+                                await this.peerConnection.setRemoteDescription(new RTCSessionDescription(desc));
+                                await this.drainIceCandidates();
+                                const answer = await this.peerConnection.createAnswer({
+                                    offerToReceiveAudio: true,
+                                    offerToReceiveVideo: this.callType === 'video'
+                                });
+                                await this.peerConnection.setLocalDescription(answer);
+                                this.sendSignal('webrtc-answer', { sdp: answer });
                             }
-                            const answer = await this.peerConnection.createAnswer();
-                            await this.peerConnection.setLocalDescription(answer);
-                            this.sendSignal('webrtc-answer', { sdp: answer });
                         } catch (err) {
                             console.error('[WebRTC CallManager] Error handling offer:', err);
                         }
@@ -298,15 +300,12 @@ function callManagerComponent() {
                 case 'webrtc-answer':
                     if (this.callState === 'connected' && this.peerConnection) {
                         try {
-                            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-                            // Drain any queued ICE candidates
-                            while (this.iceCandidateQueue.length > 0) {
-                                const cand = this.iceCandidateQueue.shift();
-                                try {
-                                    await this.peerConnection.addIceCandidate(new RTCIceCandidate(cand));
-                                } catch (e) {
-                                    console.warn('[WebRTC CallManager] Error adding queued ICE candidate on answer:', e);
-                                }
+                            if (this.peerConnection.signalingState === 'have-local-offer') {
+                                const desc = (typeof payload.sdp === 'object' && payload.sdp.type) 
+                                    ? payload.sdp 
+                                    : { type: 'answer', sdp: payload.sdp };
+                                await this.peerConnection.setRemoteDescription(new RTCSessionDescription(desc));
+                                await this.drainIceCandidates();
                             }
                         } catch (err) {
                             console.error('[WebRTC CallManager] Error handling answer:', err);
@@ -315,15 +314,16 @@ function callManagerComponent() {
                     break;
 
                 case 'webrtc-ice-candidate':
-                    if (payload.candidate) {
+                    if (payload && payload.candidate) {
+                        const candidate = payload.candidate;
                         if (this.peerConnection && this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
                             try {
-                                await this.peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
+                                await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
                             } catch (e) {
                                 console.error('[WebRTC CallManager] Error adding ICE candidate:', e);
                             }
                         } else {
-                            this.iceCandidateQueue.push(payload.candidate);
+                            this.iceCandidateQueue.push(candidate);
                         }
                     }
                     break;
@@ -331,9 +331,6 @@ function callManagerComponent() {
                 case 'call-ended':
                     if (this.callTimeout) clearTimeout(this.callTimeout);
                     this.stopRingTone();
-                    if (this.callState === 'connected') {
-                        this.logCallStatus('completed');
-                    }
                     this.resetCallState();
                     break;
             }
@@ -343,16 +340,16 @@ function callManagerComponent() {
         // INCOMING CALL ACTIONS (RECEIVER SIDE)
         // ══════════════════════════════════════════════════════════════
         async acceptCall() {
+            if (this.isAccepting) return;
+            this.isAccepting = true;
+
             this.stopRingTone();
             this.callState = 'connected';
             this.startTimer();
 
             try {
-                // Get media stream
-                this.localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: this.callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false
-                });
+                // Get media stream with echo cancellation and noise suppression
+                this.localStream = await this.getLocalUserMedia();
 
                 this.attachLocalVideo();
                 await this.setupPeerConnection();
@@ -365,6 +362,8 @@ function callManagerComponent() {
                 console.error('[WebRTC CallManager] Error accessing media on accept:', err);
                 alert('Microphone / Camera access is required to accept this call.');
                 this.declineCall();
+            } finally {
+                this.isAccepting = false;
             }
         },
 
@@ -378,6 +377,18 @@ function callManagerComponent() {
         // ══════════════════════════════════════════════════════════════
         // WEBRTC CONNECTION HANDLING
         // ══════════════════════════════════════════════════════════════
+        async drainIceCandidates() {
+            if (!this.peerConnection || !this.peerConnection.remoteDescription) return;
+            while (this.iceCandidateQueue.length > 0) {
+                const cand = this.iceCandidateQueue.shift();
+                try {
+                    await this.peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+                } catch (e) {
+                    console.warn('[WebRTC CallManager] Error adding queued ICE candidate:', e);
+                }
+            }
+        },
+
         async setupPeerConnection() {
             this.peerConnection = new RTCPeerConnection(this.rtcConfig);
 
@@ -397,27 +408,45 @@ function callManagerComponent() {
 
             // Handle Remote Stream Arrival
             this.peerConnection.ontrack = (event) => {
-                console.log('[WebRTC CallManager] Remote stream received:', event.streams);
-                this.remoteStream = event.streams[0];
+                console.log('[WebRTC CallManager] 🎙 Remote track arrived:', event.track.kind, 'enabled:', event.track.enabled);
                 
-                // Attach to video element
+                if (event.streams && event.streams[0]) {
+                    this.remoteStream = event.streams[0];
+                } else {
+                    if (!this.remoteStream) {
+                        this.remoteStream = new MediaStream();
+                    }
+                    this.remoteStream.addTrack(event.track);
+                }
+
+                // Dedicated remote audio output
+                const remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio) {
+                    if (remoteAudio.srcObject !== this.remoteStream) {
+                        remoteAudio.srcObject = this.remoteStream;
+                    }
+                    remoteAudio.muted = false;
+                    remoteAudio.volume = 1.0;
+                    remoteAudio.play().catch(e => console.warn('[WebRTC] remoteAudio autoplay blocked:', e));
+                }
+
+                // Attach to video element (kept muted to avoid duplicate audio/echo)
                 this.$nextTick(() => {
                     const remoteVideo = document.getElementById('remoteVideo');
-                    if (remoteVideo && this.remoteStream) {
-                        remoteVideo.srcObject = this.remoteStream;
+                    if (remoteVideo) {
+                        if (remoteVideo.srcObject !== this.remoteStream) {
+                            remoteVideo.srcObject = this.remoteStream;
+                        }
+                        remoteVideo.muted = true;
                     }
                 });
-                
-                // Fallback audio element
-                const remoteAudio = document.getElementById('remoteAudio');
-                if (remoteAudio && this.remoteStream) {
-                    remoteAudio.srcObject = this.remoteStream;
-                }
             };
 
             this.peerConnection.onconnectionstatechange = () => {
-                console.log('[WebRTC CallManager] Connection state changed:', this.peerConnection.connectionState);
-                if (['disconnected', 'failed', 'closed'].includes(this.peerConnection.connectionState)) {
+                const state = this.peerConnection ? this.peerConnection.connectionState : 'closed';
+                console.log('[WebRTC CallManager] Connection state changed:', state);
+                if (state === 'failed') {
+                    console.warn('[WebRTC CallManager] Peer connection failed. Ending call.');
                     this.endCall(false);
                 }
             };
@@ -504,7 +533,7 @@ function callManagerComponent() {
                 this.sendSignal('call-ended', {});
             }
 
-            if (this.callState === 'connected') {
+            if (notifyOtherPeer && this.callState === 'connected') {
                 this.logCallStatus('completed');
             }
 
@@ -515,6 +544,7 @@ function callManagerComponent() {
             if (this.callTimeout) clearTimeout(this.callTimeout);
             this.stopTimer();
             this.stopRingTone();
+            this.isAccepting = false;
 
             // Stop local media tracks
             if (this.localStream) {
@@ -1182,8 +1212,8 @@ document.addEventListener('alpine:init', () => {
      @start-call.window="startCall($event.detail)"
      class="crm-call-root">
 
-    <!-- Hidden audio element for remote stream fallback -->
-    <audio id="remoteAudio" autoplay playsinline style="display:none;"></audio>
+    <!-- Dedicated audio element for remote stream playback -->
+    <audio id="remoteAudio" autoplay playsinline style="position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0.01; pointer-events: none;"></audio>
 
     <!-- ═══════════════════════════════════════════════════════════ -->
     <!-- 1. INCOMING CALL MODAL (RECEIVER SIDE)                      -->

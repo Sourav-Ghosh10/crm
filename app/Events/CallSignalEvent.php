@@ -13,6 +13,7 @@ class CallSignalEvent implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public $signalId;
     public $senderId;
     public $senderName;
     public $targetUserId;
@@ -25,6 +26,7 @@ class CallSignalEvent implements ShouldBroadcastNow
      */
     public function __construct($senderId, $senderName, $targetUserId, $roomId, $type, $payload = null)
     {
+        $this->signalId = uniqid('sig_', true);
         $this->senderId = $senderId;
         $this->senderName = $senderName;
         $this->targetUserId = $targetUserId;
@@ -34,19 +36,14 @@ class CallSignalEvent implements ShouldBroadcastNow
     }
 
     /**
-     * Broadcast on the target user's private channel so they receive it anywhere in the CRM.
+     * Broadcast strictly on the target user's private channel.
+     * Prevents duplicate room broadcasts and keeps signaling peer-to-peer.
      */
     public function broadcastOn(): array
     {
-        $channels = [
+        return [
             new PrivateChannel('App.Models.User.' . $this->targetUserId),
         ];
-
-        if ($this->roomId) {
-            $channels[] = new PrivateChannel('chat-room.' . $this->roomId);
-        }
-
-        return $channels;
     }
 
     /**
@@ -63,6 +60,7 @@ class CallSignalEvent implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
+            'signalId' => $this->signalId,
             'senderId' => $this->senderId,
             'senderName' => $this->senderName,
             'targetUserId' => $this->targetUserId,
