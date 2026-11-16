@@ -162,7 +162,7 @@ class ChatController extends Controller
         $user = auth()->user();
 
         // Authorize member access
-        if (!$room->members->contains('id', $user->id)) {
+        if (!$room->members()->whereKey($user->id)->exists()) {
             abort(403, 'Unauthorized access.');
         }
 
@@ -193,29 +193,45 @@ class ChatController extends Controller
 
         $message->load('user');
 
-        broadcast(new ChatMessageSent($message))->toOthers();
-
-        // Send FCM Push Notification
-        $otherMembers = $room->members()->where('users.id', '!=', $user->id)->get();
-        foreach ($otherMembers as $member) {
-            $tokens = $member->fcmTokens()->pluck('token')->filter()->toArray();
-            if (empty($tokens) && $member->fcm_token) {
-                $tokens = [$member->fcm_token];
+        // Defer Pusher broadcast and FCM push notifications until after the HTTP response is returned
+        dispatch(function () use ($message, $room, $user) {
+            try {
+                broadcast(new ChatMessageSent($message))->toOthers();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Chat broadcast error: ' . $e->getMessage());
             }
-            $tokens = array_unique($tokens);
 
-            foreach ($tokens as $fcmToken) {
-                \App\Services\FcmService::sendNotification(
-                    $fcmToken,
-                    "New message from " . $user->name,
-                    strlen($message->message) > 0 ? $message->message : ($message->attachment_name ?? 'Attachment'),
-                    [
-                        'room_id' => (string) $room->id,
-                        'type' => 'chat'
-                    ]
-                );
+            try {
+                $otherMembers = $room->members()
+                    ->with('fcmTokens')
+                    ->where('users.id', '!=', $user->id)
+                    ->get();
+
+                $allTokens = [];
+                foreach ($otherMembers as $member) {
+                    $memberTokens = $member->fcmTokens->pluck('token')->filter()->toArray();
+                    if (empty($memberTokens) && $member->fcm_token) {
+                        $memberTokens = [$member->fcm_token];
+                    }
+                    $allTokens = array_merge($allTokens, $memberTokens);
+                }
+
+                $allTokens = array_values(array_unique($allTokens));
+                if (!empty($allTokens)) {
+                    \App\Services\FcmService::sendMultipleNotifications(
+                        $allTokens,
+                        "New message from " . $user->name,
+                        strlen($message->message) > 0 ? $message->message : ($message->attachment_name ?? 'Attachment'),
+                        [
+                            'room_id' => (string) $room->id,
+                            'type' => 'chat'
+                        ]
+                    );
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Chat FCM notification error: ' . $e->getMessage());
             }
-        }
+        })->afterResponse();
 
         return response()->json([
             'status' => 'success',

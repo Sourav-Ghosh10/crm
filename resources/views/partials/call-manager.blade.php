@@ -19,6 +19,9 @@ function callManagerComponent() {
         isCameraOn: true,
         isScreenSharing: false,
         isAccepting: false,
+        remoteHasVideo: false,
+        mediaConnected: false,
+        screenSender: null,
         durationSeconds: 0,
         timerInterval: null,
         callTimeout: null,
@@ -37,8 +40,24 @@ function callManagerComponent() {
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun2.l.google.com:19302' },
                 { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' }
-            ]
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            iceCandidatePoolSize: 10
         },
 
         get formattedDuration() {
@@ -102,21 +121,31 @@ function callManagerComponent() {
         },
 
         async getLocalUserMedia() {
+            const audioConstraints = {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            };
             try {
                 return await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
-                    },
+                    audio: audioConstraints,
                     video: this.callType === 'video' ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false
                 });
             } catch (err) {
-                console.warn('[WebRTC CallManager] Advanced audio constraints failed, using fallback:', err);
-                return await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: this.callType === 'video' ? true : false
-                });
+                console.warn('[WebRTC CallManager] Advanced audio constraints failed, trying basic fallback:', err);
+                try {
+                    return await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: this.callType === 'video' ? true : false
+                    });
+                } catch (err2) {
+                    if (this.callType === 'video') {
+                        console.warn('[WebRTC CallManager] Camera unavailable, falling back to audio-only:', err2);
+                        this.callType = 'audio';
+                        return await navigator.mediaDevices.getUserMedia({ audio: true });
+                    }
+                    throw err2;
+                }
             }
         },
 
@@ -128,6 +157,12 @@ function callManagerComponent() {
             if (this.callState !== 'idle') {
                 alert('You are already on an active call.');
                 return;
+            }
+
+            // Unlock remoteAudio element on user interaction gesture
+            const remoteAudio = document.getElementById('remoteAudio');
+            if (remoteAudio) {
+                remoteAudio.play().catch(() => {});
             }
 
             this.targetUserId = detail.targetUserId;
@@ -199,8 +234,23 @@ function callManagerComponent() {
             const senderId = data.senderId;
             const payload = data.payload || {};
 
-            // Deduplication: ignore if this exact signal was already processed recently
-            const signalId = data.signalId || `${type}_${senderId}_${JSON.stringify(payload).slice(0, 60)}`;
+            // Robust deduplication: prevent candidate collisions while dropping true duplicate signals
+            let signalId = data.signalId;
+            if (!signalId) {
+                if (type === 'webrtc-ice-candidate' && payload && payload.candidate) {
+                    const c = payload.candidate;
+                    const cStr = typeof c === 'string' ? c : (c.candidate || '');
+                    const mid = c.sdpMid || '';
+                    const mLine = c.sdpMLineIndex ?? '';
+                    signalId = `ice_${senderId}_${cStr}_${mid}_${mLine}`;
+                } else if (type === 'incoming-call') {
+                    signalId = `call_${senderId}_${data.roomId || ''}_${data.callType || payload.callType || ''}`;
+                } else if (['call-accepted', 'call-declined', 'call-busy', 'call-ended'].includes(type)) {
+                    signalId = `${type}_${senderId}_${Date.now()}`;
+                } else {
+                    signalId = `${type}_${senderId}_${typeof payload === 'object' ? JSON.stringify(payload) : payload}`;
+                }
+            }
             if (!this.processedSignalIds) {
                 this.processedSignalIds = new Set();
             }
@@ -246,10 +296,10 @@ function callManagerComponent() {
                         this.startTimer();
                         await this.setupPeerConnection();
                         
-                        // Create WebRTC Offer with audio enabled
+                        // Create WebRTC Offer with audio & video transceivers ready
                         const offer = await this.peerConnection.createOffer({
                             offerToReceiveAudio: true,
-                            offerToReceiveVideo: this.callType === 'video'
+                            offerToReceiveVideo: true
                         });
                         await this.peerConnection.setLocalDescription(offer);
                         this.sendSignal('webrtc-offer', { sdp: offer });
@@ -278,19 +328,26 @@ function callManagerComponent() {
                 case 'webrtc-offer':
                     if (this.callState === 'connected' && this.peerConnection) {
                         try {
-                            if (this.peerConnection.signalingState === 'stable') {
-                                const desc = (typeof payload.sdp === 'object' && payload.sdp.type) 
-                                    ? payload.sdp 
-                                    : { type: 'offer', sdp: payload.sdp };
+                            const desc = (typeof payload.sdp === 'object' && payload.sdp.type) 
+                                ? payload.sdp 
+                                : { type: 'offer', sdp: payload.sdp };
+
+                            if (this.peerConnection.signalingState !== 'stable') {
+                                await Promise.all([
+                                    this.peerConnection.setLocalDescription({ type: 'rollback' }),
+                                    this.peerConnection.setRemoteDescription(new RTCSessionDescription(desc))
+                                ]);
+                            } else {
                                 await this.peerConnection.setRemoteDescription(new RTCSessionDescription(desc));
-                                await this.drainIceCandidates();
-                                const answer = await this.peerConnection.createAnswer({
-                                    offerToReceiveAudio: true,
-                                    offerToReceiveVideo: this.callType === 'video'
-                                });
-                                await this.peerConnection.setLocalDescription(answer);
-                                this.sendSignal('webrtc-answer', { sdp: answer });
                             }
+
+                            await this.drainIceCandidates();
+                            const answer = await this.peerConnection.createAnswer({
+                                offerToReceiveAudio: true,
+                                offerToReceiveVideo: true
+                            });
+                            await this.peerConnection.setLocalDescription(answer);
+                            this.sendSignal('webrtc-answer', { sdp: answer });
                         } catch (err) {
                             console.error('[WebRTC CallManager] Error handling offer:', err);
                         }
@@ -328,6 +385,20 @@ function callManagerComponent() {
                     }
                     break;
 
+                case 'screen-share-status':
+                    console.log('[WebRTC CallManager] Received screen-share-status:', payload);
+                    this.remoteHasVideo = (this.callType === 'video') || !!payload.sharing;
+                    this.$nextTick(() => {
+                        const remoteVideo = document.getElementById('remoteVideo');
+                        if (remoteVideo && this.remoteStream) {
+                            if (remoteVideo.srcObject !== this.remoteStream) {
+                                remoteVideo.srcObject = this.remoteStream;
+                            }
+                            remoteVideo.play().catch(e => console.warn('[WebRTC] remoteVideo play err on screen status:', e));
+                        }
+                    });
+                    break;
+
                 case 'call-ended':
                     if (this.callTimeout) clearTimeout(this.callTimeout);
                     this.stopRingTone();
@@ -342,6 +413,12 @@ function callManagerComponent() {
         async acceptCall() {
             if (this.isAccepting) return;
             this.isAccepting = true;
+
+            // Unlock remoteAudio element on user interaction gesture
+            const remoteAudio = document.getElementById('remoteAudio');
+            if (remoteAudio) {
+                remoteAudio.play().catch(() => {});
+            }
 
             this.stopRingTone();
             this.callState = 'connected';
@@ -402,7 +479,8 @@ function callManagerComponent() {
             // Handle ICE Candidates
             this.peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
-                    this.sendSignal('webrtc-ice-candidate', { candidate: event.candidate });
+                    const c = event.candidate.toJSON ? event.candidate.toJSON() : event.candidate;
+                    this.sendSignal('webrtc-ice-candidate', { candidate: c });
                 }
             };
 
@@ -419,7 +497,11 @@ function callManagerComponent() {
                     this.remoteStream.addTrack(event.track);
                 }
 
-                // Dedicated remote audio output
+                if (event.track.kind === 'video') {
+                    this.remoteHasVideo = true;
+                }
+
+                // Dedicated remote audio output (always unmuted)
                 const remoteAudio = document.getElementById('remoteAudio');
                 if (remoteAudio) {
                     if (remoteAudio.srcObject !== this.remoteStream) {
@@ -427,10 +509,13 @@ function callManagerComponent() {
                     }
                     remoteAudio.muted = false;
                     remoteAudio.volume = 1.0;
-                    remoteAudio.play().catch(e => console.warn('[WebRTC] remoteAudio autoplay blocked:', e));
+                    const p = remoteAudio.play();
+                    if (p !== undefined) {
+                        p.catch(e => console.warn('[WebRTC] remoteAudio autoplay blocked:', e));
+                    }
                 }
 
-                // Attach to video element (kept muted to avoid duplicate audio/echo)
+                // Attach to video element (kept muted to avoid audio echo)
                 this.$nextTick(() => {
                     const remoteVideo = document.getElementById('remoteVideo');
                     if (remoteVideo) {
@@ -438,18 +523,51 @@ function callManagerComponent() {
                             remoteVideo.srcObject = this.remoteStream;
                         }
                         remoteVideo.muted = true;
+                        const vp = remoteVideo.play();
+                        if (vp !== undefined) {
+                            vp.catch(e => console.warn('[WebRTC] remoteVideo play blocked:', e));
+                        }
                     }
                 });
+            };
+
+            this.peerConnection.oniceconnectionstatechange = () => {
+                const iceState = this.peerConnection ? this.peerConnection.iceConnectionState : 'closed';
+                console.log('[WebRTC CallManager] ICE connection state:', iceState);
+                if (iceState === 'connected' || iceState === 'completed') {
+                    this.mediaConnected = true;
+                } else if (iceState === 'failed') {
+                    console.warn('[WebRTC CallManager] ICE connection failed, restarting ICE if supported...');
+                    if (this.peerConnection && this.peerConnection.restartIce) {
+                        this.peerConnection.restartIce();
+                    }
+                }
             };
 
             this.peerConnection.onconnectionstatechange = () => {
                 const state = this.peerConnection ? this.peerConnection.connectionState : 'closed';
                 console.log('[WebRTC CallManager] Connection state changed:', state);
-                if (state === 'failed') {
-                    console.warn('[WebRTC CallManager] Peer connection failed. Ending call.');
-                    this.endCall(false);
+                if (state === 'connected') {
+                    this.mediaConnected = true;
+                } else if (state === 'failed') {
+                    console.warn('[WebRTC CallManager] Peer connection failed.');
                 }
             };
+        },
+
+        async renegotiate() {
+            if (!this.peerConnection) return;
+            try {
+                console.log('[WebRTC CallManager] 🔄 Starting SDP renegotiation...');
+                const offer = await this.peerConnection.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: true
+                });
+                await this.peerConnection.setLocalDescription(offer);
+                await this.sendSignal('webrtc-offer', { sdp: offer, renegotiation: true });
+            } catch (err) {
+                console.error('[WebRTC CallManager] Renegotiation error:', err);
+            }
         },
 
         attachLocalVideo() {
@@ -489,40 +607,105 @@ function callManagerComponent() {
         async toggleScreenShare() {
             if (!this.isScreenSharing) {
                 try {
-                    this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                    const screenTrack = this.screenStream.getVideoTracks()[0];
-                    
-                    const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-                    if (sender) {
-                        sender.replaceTrack(screenTrack);
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                        alert('Screen sharing is not supported by your browser or on this device.');
+                        return;
                     }
 
+                    this.screenStream = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            cursor: "always"
+                        },
+                        audio: false
+                    });
+
+                    const screenTrack = this.screenStream.getVideoTracks()[0];
+                    if (!screenTrack) {
+                        throw new Error('No screen video track found');
+                    }
+
+                    // Find existing video sender (video call)
+                    const videoSender = this.peerConnection 
+                        ? this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video') 
+                        : null;
+
+                    if (videoSender) {
+                        console.log('[WebRTC CallManager] Replacing existing video track with screen track');
+                        await videoSender.replaceTrack(screenTrack);
+                    } else if (this.peerConnection) {
+                        console.log('[WebRTC CallManager] Adding new screen track to peer connection');
+                        this.screenSender = this.peerConnection.addTrack(screenTrack, this.screenStream);
+                        await this.renegotiate();
+                    }
+
+                    this.isScreenSharing = true;
+
+                    // Handle browser native stop sharing button
                     screenTrack.onended = () => {
+                        console.log('[WebRTC CallManager] Screen share ended via browser controls');
                         this.stopScreenShare();
                     };
 
-                    this.isScreenSharing = true;
+                    // Update local PIP preview
+                    this.$nextTick(() => {
+                        const localVideo = document.getElementById('localVideo');
+                        if (localVideo) {
+                            localVideo.srcObject = this.screenStream;
+                        }
+                    });
+
+                    // Notify peer
+                    await this.sendSignal('screen-share-status', { sharing: true });
+
                 } catch (err) {
-                    console.error('[WebRTC CallManager] Screen share cancelled/failed:', err);
+                    console.error('[WebRTC CallManager] Screen share error / cancelled:', err);
+                    await this.stopScreenShare();
                 }
             } else {
-                this.stopScreenShare();
+                await this.stopScreenShare();
             }
         },
 
-        stopScreenShare() {
+        async stopScreenShare() {
+            const wasSharing = this.isScreenSharing;
+            this.isScreenSharing = false;
+
             if (this.screenStream) {
-                this.screenStream.getTracks().forEach(t => t.stop());
+                this.screenStream.getTracks().forEach(t => {
+                    try { t.stop(); } catch(e) {}
+                });
                 this.screenStream = null;
             }
-            if (this.localStream) {
-                const videoTrack = this.localStream.getVideoTracks()[0];
-                const sender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-                if (sender && videoTrack) {
-                    sender.replaceTrack(videoTrack);
+
+            if (this.peerConnection) {
+                if (this.screenSender) {
+                    try {
+                        this.peerConnection.removeTrack(this.screenSender);
+                    } catch (e) {
+                        console.warn('[WebRTC CallManager] Error removing screen track:', e);
+                    }
+                    this.screenSender = null;
+                    await this.renegotiate();
+                } else if (this.callType === 'video' && this.localStream) {
+                    const videoTrack = this.localStream.getVideoTracks()[0];
+                    const videoSender = this.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (videoSender && videoTrack) {
+                        await videoSender.replaceTrack(videoTrack);
+                    }
                 }
             }
-            this.isScreenSharing = false;
+
+            // Re-attach local camera stream if video call
+            this.$nextTick(() => {
+                const localVideo = document.getElementById('localVideo');
+                if (localVideo) {
+                    localVideo.srcObject = (this.callType === 'video' && this.localStream) ? this.localStream : null;
+                }
+            });
+
+            if (wasSharing) {
+                await this.sendSignal('screen-share-status', { sharing: false });
+            }
         },
 
         endCall(notifyOtherPeer = true) {
@@ -548,22 +731,28 @@ function callManagerComponent() {
 
             // Stop local media tracks
             if (this.localStream) {
-                this.localStream.getTracks().forEach(t => t.stop());
+                this.localStream.getTracks().forEach(t => {
+                    try { t.stop(); } catch(e) {}
+                });
                 this.localStream = null;
             }
 
             if (this.screenStream) {
-                this.screenStream.getTracks().forEach(t => t.stop());
+                this.screenStream.getTracks().forEach(t => {
+                    try { t.stop(); } catch(e) {}
+                });
                 this.screenStream = null;
             }
 
             // Close peer connection
             if (this.peerConnection) {
-                this.peerConnection.close();
+                try {
+                    this.peerConnection.close();
+                } catch(e) {}
                 this.peerConnection = null;
             }
 
-            // Clear video elements
+            // Clear video & audio elements
             const localVideo = document.getElementById('localVideo');
             if (localVideo) localVideo.srcObject = null;
             const outgoingLocalVideo = document.getElementById('outgoingLocalVideo');
@@ -571,12 +760,18 @@ function callManagerComponent() {
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo) remoteVideo.srcObject = null;
             const remoteAudio = document.getElementById('remoteAudio');
-            if (remoteAudio) remoteAudio.srcObject = null;
+            if (remoteAudio) {
+                remoteAudio.srcObject = null;
+                remoteAudio.pause();
+            }
 
             this.callState = 'idle';
             this.targetUserId = null;
             this.callerId = null;
             this.remoteStream = null;
+            this.screenSender = null;
+            this.remoteHasVideo = false;
+            this.mediaConnected = false;
             this.iceCandidateQueue = [];
             this.isMinimized = false;
             this.isMuted = false;
@@ -1325,9 +1520,9 @@ document.addEventListener('alpine:init', () => {
             <!-- Window Header -->
             <div class="crm-header-bar">
                 <div class="crm-header-left">
-                    <span class="crm-live-dot"></span>
+                    <span class="crm-live-dot" :style="mediaConnected ? 'background: #10b981; box-shadow: 0 0 8px #10b981;' : 'background: #f59e0b; box-shadow: 0 0 8px #f59e0b;'"></span>
                     <span class="crm-header-name" x-text="remoteUserName"></span>
-                    <span class="crm-header-timer" x-text="formattedDuration"></span>
+                    <span class="crm-header-timer" x-text="mediaConnected ? formattedDuration : 'Connecting...'"></span>
                 </div>
                 <div class="crm-header-right">
                     <!-- Minimize / Expand -->
@@ -1345,22 +1540,22 @@ document.addEventListener('alpine:init', () => {
             <!-- Main Viewport (Visible when not minimized) -->
             <div class="crm-media-body" x-show="!isMinimized">
                 
-                <!-- Video Call Viewport -->
-                <template x-if="callType === 'video'">
+                <!-- Video Call OR Screen Sharing Viewport -->
+                <template x-if="callType === 'video' || isScreenSharing || remoteHasVideo">
                     <div class="crm-video-viewport">
-                        <!-- Remote Video Feed -->
-                        <video id="remoteVideo" autoplay playsinline class="crm-video-feed"></video>
+                        <!-- Remote Video / Screen Feed -->
+                        <video id="remoteVideo" autoplay playsinline class="crm-video-feed" style="width: 100%; height: 100%; object-fit: contain; background: #000;"></video>
 
-                        <!-- Local Video PIP -->
-                        <div class="crm-pip-box">
-                            <video id="localVideo" autoplay playsinline muted class="crm-video-feed" style="transform: scaleX(-1);"></video>
-                            <span class="crm-pip-label">You</span>
+                        <!-- Local Video / Screen PIP -->
+                        <div class="crm-pip-box" x-show="callType === 'video' || isScreenSharing">
+                            <video id="localVideo" autoplay playsinline muted class="crm-video-feed" :style="isScreenSharing ? 'object-fit: contain; transform: none;' : 'object-fit: cover; transform: scaleX(-1);'"></video>
+                            <span class="crm-pip-label" x-text="isScreenSharing ? 'Your Screen' : 'You'"></span>
                         </div>
                     </div>
                 </template>
 
-                <!-- Audio Call Viewport -->
-                <template x-if="callType === 'audio'">
+                <!-- Audio-Only Call Viewport (when neither side is sharing video or screen) -->
+                <template x-if="!(callType === 'video' || isScreenSharing || remoteHasVideo)">
                     <div class="crm-audio-viewport">
                         <div class="crm-avatar-audio-box">
                             <div class="crm-avatar-audio">
@@ -1369,7 +1564,7 @@ document.addEventListener('alpine:init', () => {
                             <div class="crm-pulse-circle"></div>
                         </div>
                         <h3 class="crm-calling-target" style="margin-top: 16px;" x-text="remoteUserName"></h3>
-                        <p class="crm-calling-subtext" style="color: #10b981;">Connected</p>
+                        <p class="crm-calling-subtext" :style="mediaConnected ? 'color: #10b981;' : 'color: #f59e0b;'" x-text="mediaConnected ? 'Connected' : 'Connecting...'"></p>
                         <div class="crm-duration-pill" x-text="formattedDuration"></div>
                     </div>
                 </template>
@@ -1404,8 +1599,8 @@ document.addEventListener('alpine:init', () => {
                     </svg>
                 </button>
 
-                <!-- Screen Share (Video Call only) -->
-                <button type="button" x-show="callType === 'video'" @click="toggleScreenShare()" 
+                <!-- Screen Share (Available in both Audio and Video Calls) -->
+                <button type="button" @click="toggleScreenShare()" 
                         class="crm-ctrl-btn" 
                         :class="isScreenSharing ? 'crm-ctrl-btn-active' : ''"
                         :title="isScreenSharing ? 'Stop Screen Share' : 'Share Screen'">

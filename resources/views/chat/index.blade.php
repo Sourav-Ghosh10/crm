@@ -447,8 +447,8 @@
                                                         x-text="formatTime(msg.created_at)"></span>
                                                 </div>
                                                 <div x-show="msg.message"
-                                                    class="text-sm mt-1 leading-relaxed whitespace-pre-wrap"
-                                                    x-text="msg.message"></div>
+                                                    class="text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words"
+                                                    x-html="formatMessage(msg.message, msg.user_id === currentUserId)"></div>
 
 
                                                 <!-- Attached File Block -->
@@ -1045,6 +1045,7 @@
 
                 roomId: roomId,
                 currentUserId: currentUserId,
+                currentUserName: @json(auth()->user()->name ?? 'You'),
                 messages: @json($selectedRoom ? $messages : []),
                 seenMessageIds: new Set(), // track message IDs to prevent duplicates
                 newMessage: '',
@@ -1136,6 +1137,15 @@
                                     if (id === this.roomId) {
                                         // Active room
                                         const shouldFollow = this.isNearBottom();
+
+                                        if (msg.user_id === this.currentUserId) {
+                                            const optIdx = this.messages.findIndex(m => m._optimistic && m.message === msg.message);
+                                            if (optIdx !== -1) {
+                                                this.messages.splice(optIdx, 1, msg);
+                                                return;
+                                            }
+                                        }
+
                                         this.messages.push(msg);
 
                                         if (msg.user_id !== this.currentUserId) {
@@ -1322,6 +1332,33 @@
                 formatTime(dateString) {
                     const date = new Date(dateString);
                     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                },
+
+                formatMessage(text, isOwnMessage = false) {
+                    if (!text) return '';
+                    const escaped = String(text)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+
+                    const urlRegex = /((?:https?:\/\/|www\.)[^\s<]+)/gi;
+                    const linkStyle = isOwnMessage
+                        ? 'color: #bae6fd; text-decoration: underline; text-underline-offset: 2px; word-break: break-all;'
+                        : 'color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; word-break: break-all;';
+
+                    return escaped.replace(urlRegex, (match) => {
+                        let url = match;
+                        let trailing = '';
+                        const trailingMatch = url.match(/([.,!?;:]+)$/);
+                        if (trailingMatch) {
+                            trailing = trailingMatch[1];
+                            url = url.slice(0, -trailing.length);
+                        }
+                        const href = url.toLowerCase().startsWith('www.') ? `https://${url}` : url;
+                        return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="${linkStyle}" class="hover:opacity-80 transition-opacity">${url}</a>${trailing}`;
+                    });
                 },
 
                 getUserInitials(name) {
@@ -1518,7 +1555,8 @@
 
                 async sendMessage() {
                     const message = this.newMessage.trim();
-                    if ((!message && !this.attachment) || this.isSending) return;
+                    const attachmentFile = this.attachment;
+                    if ((!message && !attachmentFile) || this.isSending) return;
 
                     // Check connectivity before even trying
                     if (!navigator.onLine) {
@@ -1526,13 +1564,93 @@
                         return;
                     }
 
-                    this.isSending = true;
                     this.sendError = '';
+
+                    // 1. Optimistic UI path for standard text messages (instant 0ms feedback)
+                    if (!attachmentFile) {
+                        const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+                        const optimisticMsg = {
+                            id: tempId,
+                            chat_room_id: this.roomId,
+                            user_id: this.currentUserId,
+                            message: message,
+                            attachment_path: null,
+                            attachment_name: null,
+                            attachment_mime_type: null,
+                            created_at: new Date().toISOString(),
+                            user: {
+                                id: this.currentUserId,
+                                name: this.currentUserName
+                            },
+                            _optimistic: true
+                        };
+
+                        // Clear input and render message immediately
+                        this.newMessage = '';
+                        if (this.$refs.messageInput) {
+                            this.$refs.messageInput.style.height = 'auto';
+                        }
+                        this.messages.push(optimisticMsg);
+
+                        // Bump active room to the top of its section
+                        const link = document.getElementById(`room-link-${this.roomId}`);
+                        if (link && link.parentNode) {
+                            link.parentNode.prepend(link);
+                        }
+
+                        this.$nextTick(() => {
+                            this.scrollToBottom(true);
+                            this.$refs.messageInput?.focus();
+                        });
+
+                        try {
+                            const payload = new FormData();
+                            payload.append('message', message);
+
+                            const response = await axios.post(this.messageEndpoint, payload);
+                            const sentMsg = response.data.message;
+
+                            this.seenMessageIds.add(sentMsg.id);
+
+                            const idx = this.messages.findIndex(m => m.id === tempId);
+                            if (idx !== -1) {
+                                const alreadyAddedByEcho = this.messages.some(m => m.id === sentMsg.id);
+                                if (alreadyAddedByEcho) {
+                                    this.messages.splice(idx, 1);
+                                } else {
+                                    this.messages.splice(idx, 1, sentMsg);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('[Chat] Send error:', error);
+                            const idx = this.messages.findIndex(m => m.id === tempId);
+                            if (idx !== -1) {
+                                this.messages.splice(idx, 1);
+                            }
+                            if (!this.newMessage) {
+                                this.newMessage = message;
+                            }
+
+                            const isNetworkError = !navigator.onLine
+                                || error.code === 'ERR_NETWORK'
+                                || error.message === 'Network Error'
+                                || !error.response;
+                            if (isNetworkError) {
+                                this.sendError = '📶 No internet connection. Please check your network and try again.';
+                            } else {
+                                this.sendError = error.response?.data?.message || 'Unable to send. Please try again.';
+                            }
+                        }
+                        return;
+                    }
+
+                    // 2. Attachment upload path
+                    this.isSending = true;
 
                     try {
                         const payload = new FormData();
                         payload.append('message', message);
-                        if (this.attachment) payload.append('attachment', this.attachment);
+                        payload.append('attachment', attachmentFile);
 
                         const response = await axios.post(this.messageEndpoint, payload);
                         const sentMsg = response.data.message;
@@ -1558,7 +1676,6 @@
                         });
                     } catch (error) {
                         console.error('[Chat] Send error:', error);
-                        // Detect network/offline errors
                         const isNetworkError = !navigator.onLine
                             || error.code === 'ERR_NETWORK'
                             || error.message === 'Network Error'
